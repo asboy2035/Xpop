@@ -1,5 +1,5 @@
 <p align="center">
-<img src = "Assets.xcassets/AppIcon.appiconset/cursor-square_256x256.png">
+<img src = "Xpop/Assets.xcassets/AppIcon.appiconset/cursor-square_256x256.png">
 <h1 style="text-align:center">Xpop</h1>
 <h4 align="center">An open-source text selection tool for macOS, a PopClip alternative.</h4>
 
