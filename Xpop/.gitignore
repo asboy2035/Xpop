@@ -1,0 +1,65 @@
+# Xcode 的构建和缓存文件
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+build/
+*.app
+*.dSYM
+*.framework
+
+# Xcode 项目的临时文件和设置
+xcuserdata/
+*.mode1v3
+*.pbxuser
+*.perspectivev3
+*.xcuserstate
+
+# CocoaPods 相关文件
+Podfile.lock
+Pods/
+
+# Carthage 相关文件
+Carthage/Build/
+
+# Swift Package Manager 相关文件
+.swiftpm/
+Packages/
+
+# 编译产生的中间文件
+*.o
+*.lo
+*.la
+*.pyc
+*.swp
+
+# 调试相关文件
+*.gdb
+*.lldb
+
+# 操作系统特定文件
+.DS_Store
+._*
+Icon?
+
+# 用户相关的配置文件
+*.plist
+*.lock
+*.lock.lock
+
+# 其他 IDE 的临时文件 (如果你有的话)
+.idea/
+*.iml
+
+# 其他
+.vscode/
+.env
+*.log
+*.bak
+
+# Crashlytics/Fabric 相关文件 (如果你使用了)
+Crashlytics.framework/
+Fabric.framework/
+
+# 忽略 Xcode 的自动签名信息
+*.provisionprofile
+*.p12

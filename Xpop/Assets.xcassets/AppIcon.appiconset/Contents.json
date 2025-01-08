@@ -1,61 +1,61 @@
 {
   "images" : [
     {
-      "filename" : "solar--cursor-square-bold-duotone.png",
+      "filename" : "cursor-square_16x16.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "16x16"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-2.png",
+      "filename" : "cursor-square_32x32.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "16x16"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-2 1.png",
+      "filename" : "cursor-square_32x32 1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "32x32"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-3.png",
+      "filename" : "cursor-square_64x64.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "32x32"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-4.png",
+      "filename" : "cursor-square_128x128.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "128x128"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-5.png",
+      "filename" : "cursor-square_256x256.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "128x128"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-5 1.png",
+      "filename" : "cursor-square_256x256 1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-6.png",
+      "filename" : "cursor-square_512x512.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-6 1.png",
+      "filename" : "cursor-square_512x512 1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
-      "filename" : "solar--cursor-square-bold-duotone-7.png",
+      "filename" : "cursor-square_1024x1024.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
