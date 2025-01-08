@@ -8,3 +8,6 @@
 <img src="https://img.shields.io/github/license/dongqishen/xpop" alt="License"></a>          
 <a href="https://img.shields.io/badge/-macOS-black?&logo=apple&logoColor=white">
 <img src="https://img.shields.io/badge/-macOS-black?&logo=apple&logoColor=white" alt="macOS"></a>  
+
+> [!IMPORTANT]
+> This project is under active development and may have bugs. Inspired by PopClip, I’m building an open-source alternative with plans to fully support its plugin system (currently limited). As this is my first Swift project, the code will evolve as I learn and improve. Feedback is welcome!
