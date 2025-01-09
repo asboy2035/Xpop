@@ -41,14 +41,6 @@ struct SettingView: View {
                         }
                         .buttonStyle(.borderless)
                         .foregroundColor(Color(NSColor.labelColor))
-                        
-                        Divider()
-                            .background(
-                                colorScheme == .dark
-                                    ? Color(NSColor(calibratedWhite: 0.1, alpha: 1.0)) // 深色背景
-                                    : Color(NSColor(calibratedWhite: 0.9, alpha: 1.0)) // 浅色背景
-                            )
-                            .padding(.horizontal, 16)
                     }
                     
                     
@@ -127,13 +119,13 @@ struct SettingsSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) { // Removed spacing to align rows tightly
             Text(title)
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.primary)
                 .padding(.leading, 8)  //设置左侧内边距为 8
             VStack(spacing: 0) { // Inner VStack for rows
                 content
             }
-            .background(Color.gray.opacity(0.1)) // Slightly darker background
-            .cornerRadius(10)
+            .background(Color.gray.opacity(0.05)) // Slightly darker background
+            .cornerRadius(4)
             .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
         .padding(.horizontal)
@@ -262,8 +254,8 @@ struct SettingLanguageRow: View {
             // 下拉菜单
             Picker("", selection: $chosenLanguage) {
                 ForEach(supportLanguage, id: \.self) { language in
-                    Text(language).tag(language)
-                    
+                    Text(language)
+                        .tag(language)
                 }
             }
             .pickerStyle(MenuPickerStyle()) // 使用下拉菜单样式

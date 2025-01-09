@@ -257,7 +257,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
     }
 
-
     @MainActor
     public func hideWindow_new() {
         window.orderOut(nil)
@@ -305,6 +304,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         settingsWindow.isReleasedWhenClosed = false
         settingsWindow.center()
         settingsWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
 
         self.settingsWindow = settingsWindow
         NotificationCenter.default.addObserver(
@@ -316,13 +316,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
     }
 
-    
-    
     @objc func quitApp() {
         NSApplication.shared.terminate(nil)
     }
 
-    
     // MARK: - NSWindow Notifications
     @objc private func hideWindow() {
         window.orderOut(nil)
