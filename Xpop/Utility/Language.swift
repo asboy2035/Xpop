@@ -10,6 +10,7 @@ import Combine
 
 class LanguageManager: ObservableObject {
     static let shared = LanguageManager()
+    private let logger = Logger.shared
     
     // 可用语言列表
     private let availableLocalizations = Bundle.main.localizations
@@ -30,7 +31,7 @@ class LanguageManager: ObservableObject {
     // 当前选中的语言名称，默认值是系统语言名称
     @Published var selectedLanguage: String {
         didSet {
-            print("changelanguage: \(selectedLanguage)")
+            logger.log("changelanguage to : %{public}@", selectedLanguage, type: .info)
             // 当语言更改时，通知系统刷新语言
             if let newCode = language2Code[selectedLanguage] {
                 languageCode = newCode

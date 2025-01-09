@@ -14,7 +14,6 @@ class SettingsManager: ObservableObject {
     
     @Published var selectedMode: String {
         didSet {
-            print("changeMode: \(selectedMode)")
             UserDefaults.standard.set(selectedMode, forKey: Keys.selectedMode)
         }
     }

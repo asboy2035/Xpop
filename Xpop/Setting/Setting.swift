@@ -81,10 +81,10 @@ struct SettingView: View {
                         .foregroundColor(Color(NSColor.labelColor))
                     }
                     
-                    // Plugins
-                    SettingsSection(title: String(localized: "Plugin")) {
+                    // Extensions
+                    SettingsSection(title: String(localized: "Extensions")) {
                         NavigationLink(destination: ExtensionManagerView()){
-                            SettingsRow(title: String(localized: "Plugin..."), detail: ">")
+                            SettingsRow(title: String(localized: "Extension..."), detail: ">")
                         }
                         .buttonStyle(.borderless)
                         .foregroundColor(Color(NSColor.labelColor))

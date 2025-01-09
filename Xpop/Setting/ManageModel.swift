@@ -66,8 +66,6 @@ struct ManageModelView: View {
                 // "+" Button
                 Button(action: {
                     showingSheet.toggle()
-                    print("Add action triggered")
-                    // Add your add logic here
                 }) {
                     Image(systemName: "plus")
                         .frame(width: 30, height: 30)
@@ -136,8 +134,6 @@ struct ModelProviderRow: View {
             Spacer()
             Button("Edit") {
                 showingSheet.toggle()
-                print("Edit button is pressed")
-                
             }
             .sheet(isPresented: $showingSheet) {
                 AddProviderView(existingProvider: provider)
@@ -184,6 +180,8 @@ struct AddProviderView: View {
     @Environment(\.dismiss) var dismiss // 添加 dismiss 环境变量
     
     var existingProvider: ModelProvider? // 编辑时传入的已有数据
+    
+    private let logger = Logger.shared
     
     init(existingProvider: ModelProvider? = nil) {
         self.existingProvider = existingProvider
@@ -370,7 +368,7 @@ struct AddProviderView: View {
                     newModels: modelsName.split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) }
                 )
                 dismiss()
-                print("ModelProvider updated: \(existingProvider)")
+                logger.log("ModelProvider updated: %{public}@", existingProvider.name, type: .info)
             } else {
                 do {
                     let provider = try createModelProvider(
@@ -379,7 +377,7 @@ struct AddProviderView: View {
                         apiKey: apiKey,
                         modelsName: modelsName
                     )
-                    print("ModelProvider created: \(provider)")
+                    logger.log("ModelProvider created: %{public}@", provider.name, type: .info)
                     manager.addProvider(provider: provider)
                     dismiss()
                 } catch ModelProviderError.emptyModelsName {
@@ -387,7 +385,7 @@ struct AddProviderView: View {
                 } catch ModelProviderError.invalidModelsName(let invalidInput) {
                     modelsNameError = "Invalid models name input: '\(invalidInput)'."
                 } catch {
-                    print("Unexpected error: \(error)")
+                    logger.log("Unexpected error:: %{public}@", error.localizedDescription, type: .error)
                 }
             }
         }
@@ -406,9 +404,8 @@ struct AddProviderView: View {
     }
 }
 
-
-struct ManageAppsView_Previews: PreviewProvider {
-    static var previews: some View {
-        ManageModelView().environmentObject(ProviderManager.shared)
-    }
-}
+//struct ManageAppsView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ManageModelView().environmentObject(ProviderManager.shared)
+//    }
+//}

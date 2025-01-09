@@ -106,7 +106,6 @@ public class TextSelectionManager: ObservableObject {
     private var enableForce: Bool = true
 
     public init() {
-//        setupMouseUpEventObserver()
     }
     
     public func eableForceCopy() {
@@ -115,28 +114,6 @@ public class TextSelectionManager: ObservableObject {
     
     public func disableForceCopy() {
         enableForce = false
-    }
-
-    /// Observes mouse-up events globally.
-    private func setupMouseUpEventObserver() {
-        NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { [weak self] _ in
-            // Ensure `self` is still alive
-            guard let self = self else { return }
-
-            // Call the async method within a Task
-            Task {
-                do {
-                    // Call getSelectedText_new() and handle the result
-                    let selectedText = try await self.getSelectedText()
-                    await self.updateSelectedText(selectedText, method: "AXUIElement")
-                    print("Selected text: \(selectedText)")
-                } catch {
-                    // Handle any errors thrown by getSelectedText_new()
-                    print("Failed to get selected text: \(error)")
-                }
-            }
-            
-        }
     }
     
     public func getSelectedText() async throws -> String {
@@ -412,6 +389,7 @@ class ApplicationAppleScripts {
 class ClipboardManager {
     private var backupItems: [NSPasteboardItem] = []
     private var wasClipboardEmpty: Bool = false
+    private let logger = Logger.shared
 
     /// 保存当前剪贴板内容（深拷贝）
     func saveClipboardContents() throws {
@@ -470,10 +448,10 @@ class ClipboardManager {
             try restoreClipboardContents() // 恢复原始内容
             return result
         } catch let error as TextSelectionError {
-            print("Error during clipboard operation: \(error.description())")
+            logger.log("Error during clipboard operation: %{public}@", error.description(), type: .error)
             throw error
         } catch {
-            print("Unknown error: \(error.localizedDescription)")
+            logger.log("Unknown error: %{public}@", error.localizedDescription, type: .error)
             throw TextSelectionError.genericError(message: "Unknown error during clipboard operation.")
         }
     }
@@ -510,21 +488,16 @@ class CopyMenuFinder {
         return {
             let pasteboard = NSPasteboard.general
             let initialChangeCount = pasteboard.changeCount
-            print("Before action - changeCount: \(initialChangeCount)")
-            print("Before action - clipboard content: \(pasteboard.string(forType: .string) ?? "nil")")
             
             // 执行点击动作
             let result = AXUIElementPerformAction(copyItem, kAXPressAction as CFString)
             if result != .success {
                 throw CopyMenuError.actionFailed
             }
-
             // 等待剪贴板更新
             try await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
             let afterChangeCount = pasteboard.changeCount
-            print("After action - changeCount: \(afterChangeCount)")
-            print("After action - clipboard content: \(pasteboard.string(forType: .string) ?? "nil")")
             
             // 检查剪贴板是否更新
             if pasteboard.changeCount != initialChangeCount {

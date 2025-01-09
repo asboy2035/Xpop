@@ -222,7 +222,6 @@ public class OpenAIChatClient {
                 }
                 continuation.finish()
             } catch {
-                print("error: \(error)")
                 continuation.finish()
             }
         }

@@ -14,6 +14,8 @@ class StatusBarManager: NSObject {
     private var menu: NSMenu?
     
     private var eventMonitor: MouseEventMonitor?
+    
+    private let logger = Logger.shared
 
     private let userDefaultsKey = "isXpopEnabled"
     private var isEnabled: Bool {
@@ -52,9 +54,7 @@ class StatusBarManager: NSObject {
                 appIcon.size = NSSize(width: 24, height: 24)
                 button.image = appIcon
             }
-//            button.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: nil)
         }
-
         buildMenu()
     }
     
@@ -112,11 +112,10 @@ class StatusBarManager: NSObject {
     @objc private func enableSwitchChanged(_ sender: NSSwitch) {
         if sender.state == .on {
             isEnabled = true
-            print("Enable is ON")
-            // 执行启用应用程序的逻辑
+            logger.log("Xpop is ON.", type: .debug)
         } else {
             isEnabled = false
-            print("Enable is OFF")
+            logger.log("Xpop is OFF.", type: .debug)
             // 执行禁用应用程序的逻辑
         }
     }

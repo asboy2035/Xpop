@@ -27,6 +27,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     
     @Published var isExtension: Bool = false // 直接在 AppDelegate 中定义状态
     @Published var extensionObj: Extension?
+    
+    private let logger = Logger.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 1. Request accessibility permission and load forbidden apps list
@@ -37,16 +39,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         setupMainWindow()
 
         // 3. Create the status bar item and menu
-        // 初始化 `StatusBarManager`，并传递 `eventMonitor`
-//        statusBarManager = StatusBarManager(eventMonitor: eventMonitor)
-//        statusBarManager.setupStatusBar()
         setupStatusBar(eventMonitor: eventMonitor)
 
         // 4. Add global mouse event monitors
         setupEventMonitoring()
-        
-        // 5. Register for window hide notification
-        NotificationCenter.default.addObserver(self, selector: #selector(hideWindow), name: Notification.Name("HideMainWindow"), object: nil)
     }
 
     // MARK: - Setup Methods
@@ -61,10 +57,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let hostingView = NSHostingView(rootView: contentView
             .environmentObject(AppDelegate.shared))
         hostingView.autoresizingMask = [.width, .height]
-        window?.contentView = hostingView
-        window?.setContentSize(hostingView.fittingSize)
+        window.contentView = hostingView
+        window.setContentSize(hostingView.fittingSize)
         configureWindowAppearance()
-
         window?.orderOut(nil) // Initially hide the window
     }
 
@@ -76,10 +71,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window.backgroundColor = .clear
         window.level = .floating
         window.hasShadow = true
-        window?.standardWindowButton(.closeButton)?.isHidden = true
-        window?.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        window?.standardWindowButton(.zoomButton)?.isHidden = true
-        window?.isMovableByWindowBackground = true
+        window.standardWindowButton(.closeButton)?.isHidden = true
+        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        window.standardWindowButton(.zoomButton)?.isHidden = true
+        window.isMovableByWindowBackground = true
         window.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle]
         window.acceptsMouseMovedEvents = true
     }
@@ -98,12 +93,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     // 调用异步函数并处理结果
                     self.selectedText = try await self.manager.getSelectedText()
                     await self.showWindow()
-                    print("Selected text: \(self.selectedText ?? "")")
+                    self.logger.log("DoubleClick trigger. Selected text: %{public}@", self.selectedText ?? "", type: .debug)
                 } catch {
                     await self.hideWindow_new()
-//                    self.hideWindow()
-                    // 处理 getSelectedText_new() 抛出的错误
-                    print("Failed to get selected text: \(error)")
+                    self.logger.log("DoubleClick error: %{public}@", error as CVarArg, type: .error)
                 }
             }
         }
@@ -115,12 +108,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     // 调用异步函数并处理结果
                     self.selectedText = try await self.manager.getSelectedText()
                     await self.showWindow()
-                    print("Selected text: \(self.selectedText ?? "")")
+                    self.logger.log("Drag and drop trigger. Selected text: %{public}@", self.selectedText ?? "", type: .debug)
                 } catch {
-                    // 处理 getSelectedText_new() 抛出的错误
                     await self.hideWindow_new()
-//                    self.hideWindow()
-                    print("Failed to get selected text: \(error)")
+                    self.logger.log("Drag and drop error: %{public}@", error as CVarArg, type: .error)
                 }
             }
         }
@@ -181,7 +172,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
              }
              self.lastMouseLocation = currentMouseLocation
         }
-        
         // If it's not a significant up scroll, reset the last mouse location
         else {
             self.lastMouseLocation = nil
@@ -258,14 +248,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 contentView.layoutSubtreeIfNeeded()
                 let contentSize = contentView.fittingSize
                 window.setContentSize(contentSize)
-                print("contentsize: \(contentSize)")
-
                 // 在设置 contentSize 之后获取 window.frame.size
                 let windowSize = window.frame.size
                 let newOrigin = NSPoint(x: mouseLocation!.x - windowSize.width / 2, y: mouseLocation!.y + 10)
                 window.setFrameOrigin(newOrigin)
             }
-            window.makeKeyAndOrderFront(nil)
+            window.orderFront(nil)
         }
     }
 
@@ -280,7 +268,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func requestAccessibilityPermission() {
         let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
         if !AXIsProcessTrustedWithOptions(options) {
-            print(TextSelectionError.accessibilityPermissionDenied.description())
+            logger.log("Request accessibility Permission: %{public}@", TextSelectionError.accessibilityPermissionDenied.description(), type: .error)
         }
     }
 
@@ -290,7 +278,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
     }
 
-    
     // MARK: - Menu Actions
     @objc func openSettings() {
         if let window = settingsWindow {
@@ -302,27 +289,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     private func createSettingsWindow() {
-        let window = NSWindow(
+        let settingsWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 600),
             styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered, defer: false)
 
-        window.title = "Settings"
-        window.contentView = NSHostingView(rootView: SettingView()
+        settingsWindow.title = "Settings"
+        settingsWindow.contentView = NSHostingView(rootView: SettingView()
             .environmentObject(ProviderManager.shared)
             .environmentObject(SettingsManager.shared)
             .environmentObject(ExtensionManager.shared)
             .environmentObject(LanguageManager.shared))
 
-        window.titlebarAppearsTransparent = true
-        window.isReleasedWhenClosed = false
-        window.center()
-        window.makeKeyAndOrderFront(nil)
+        settingsWindow.titlebarAppearsTransparent = true
+        settingsWindow.isReleasedWhenClosed = false
+        settingsWindow.center()
+        settingsWindow.makeKeyAndOrderFront(nil)
 
-        settingsWindow = window
+        self.settingsWindow = settingsWindow
         NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
-            object: window,
+            object: settingsWindow,
             queue: nil
         ) { [weak self] _ in
             self?.settingsWindow = nil
@@ -338,6 +325,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     
     // MARK: - NSWindow Notifications
     @objc private func hideWindow() {
-        window?.orderOut(nil)
+        window.orderOut(nil)
     }
 }

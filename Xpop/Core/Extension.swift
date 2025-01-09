@@ -278,6 +278,7 @@ struct ExtensionItem: Identifiable, Decodable, Encodable {
 class ExtensionManager: ObservableObject {
     // MARK: - Shared Instance
     static let shared = ExtensionManager()
+    private let logger = Logger.shared
     
     // MARK: - Properties
     @Published var extensions: [String: Extension] = [:]
@@ -342,7 +343,7 @@ class ExtensionManager: ObservableObject {
         let extensionsDirectory = getExtensionsDirectory()
         // 检查目录是否存在
         guard FileManager.default.fileExists(atPath: extensionsDirectory.path) else {
-            print("Extensions directory does not exist.")
+            logger.log("Extensions directory does not exist.", type: .error)
             return
         }
         
@@ -360,13 +361,13 @@ class ExtensionManager: ObservableObject {
                             let extensionInstance = try ExtensionManager.fromYAML(yamlString)
                             extensions[folder] = extensionInstance
                         } catch {
-                            print("Failed to load extension from \(folder): \(error)")
+                            logger.log("Failed to load extension from %{public}@: %{public}@:", folder, error.localizedDescription, type: .error)
                         }
                     }
                 }
             }
         } catch {
-            print("Failed to load extensions: \(error)")
+            logger.log("Failed to load extensions: %{public}@", error.localizedDescription, type: .error)
         }
     }
     
@@ -443,16 +444,16 @@ class ExtensionManager: ObservableObject {
         
         // 检查插件目录是否存在
         guard FileManager.default.fileExists(atPath: pluginDirectory.path) else {
-            print("Plugin directory '\(extensionName)' does not exist.")
+            logger.log("Plugin directory %{public}@ does not exist.", extensionName, type: .info)
             return
         }
         
         // 删除插件目录
         do {
             try FileManager.default.removeItem(at: pluginDirectory)
-            print("Deleted plugin directory at: \(pluginDirectory.path)")
+            logger.log("Deleted plugin directory at: %{public}@", pluginDirectory.path, type: .info)
         } catch {
-            print("Failed to delete plugin directory '\(extensionName)': \(error.localizedDescription)")
+            logger.log("Failed to delete plugin directory %{public}@: %{public}@", extensionName, error.localizedDescription, type: .error)
         }
     }
     
@@ -472,7 +473,7 @@ class ExtensionManager: ObservableObject {
             do {
                 try FileManager.default.createDirectory(at: extensionsDirectory, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print("Failed to create Extensions directory: \(error.localizedDescription)")
+                logger.log("Failed to create Extensions directory: %{public}@", error.localizedDescription, type: .error)
             }
         }
         
@@ -564,7 +565,7 @@ class ExtensionManager: ObservableObject {
                 // 删除已存在的同名插件
                 let existingPluginDirectory = extensionsDirectory.appendingPathComponent(existingDirectory)
                 try FileManager.default.removeItem(at: existingPluginDirectory)
-                print("Removed existing plugin at: \(existingPluginDirectory.path)")
+                logger.log("Removed existing plugin at: %{public}@", existingPluginDirectory.path, type: .info)
             }
         }
         
@@ -607,7 +608,8 @@ class ExtensionManager: ObservableObject {
                 
                 // 删除插件目录
                 try FileManager.default.removeItem(at: pluginDirectory)
-                print("Uninstalled plugin at: \(pluginDirectory.path)")
+                
+                logger.log("Uninstalled plugin at: %{public}", pluginDirectory.path, type: .info)
                 
                 // 重新加载插件
                 loadExtensions()
@@ -617,23 +619,6 @@ class ExtensionManager: ObservableObject {
         
         // 如果没有找到匹配的插件目录
         throw Extension.ExtensionError.fileWriteFailed("Extension with name '\(name)' not found.")
-    }
-    
-    // MARK: - 打开 URL
-    static func openURL(_ url: String, selectedText: String, additionalParameter: Any? = nil) {
-        // 替换 URL 中的占位符
-        let formattedURL = url
-            .replacingOccurrences(of: "***", with: selectedText)
-            .replacingOccurrences(of: "{popclip text}", with: selectedText)
-            .replacingOccurrences(of: "{xclip text}", with: selectedText)
-        
-        // 检查 URL 是否有效
-        guard let urlObject = URL(string: formattedURL) else {
-            print("Invalid URL: \(formattedURL)")
-            return
-        }
-        
-        NSWorkspace.shared.open(urlObject)
     }
 }
 
@@ -646,10 +631,7 @@ class BuiltInAction {
                     
                     var selectedText: String?
                     selectedText = winManager.selectedText
-                    
-                    print("Selected Text: \(selectedText ?? "None")")
                     winManager.panelManager.showPanel(query: selectedText!)
-                    print("执行翻译功能")
                 }
             }
     ]

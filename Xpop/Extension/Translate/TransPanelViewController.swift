@@ -33,6 +33,8 @@ class TransPanelViewController: NSViewController {
     private let typingSpeedMin: TimeInterval = 0.01 // 最小速度
     private let typingSpeedMax: TimeInterval = 0.2 // 最大速度
     private var currentTask: Task<Void, Never>?
+    
+    private let logger = Logger.shared
 
     // 自定义初始化方法
     init(query: String) {
@@ -111,7 +113,7 @@ class TransPanelViewController: NSViewController {
         // 初始化 CopyButton
         let copyButton = CopyButton()
         copyButton.onCopy = {
-            print("复制按钮被点击了")
+            self.logger.log("copy button clicked.", type: .debug)
             // 在这里添加具体的复制逻辑，比如将某些文本复制到剪贴板
             let content = self.scrollableTextView.getTextContent()
             let pasteboard = NSPasteboard.general
@@ -123,21 +125,21 @@ class TransPanelViewController: NSViewController {
         // 初始化RegenerateButton
         let regenerateButton = RegenerateButton()
         regenerateButton.onRegenerate = {
-            print("重新生成按钮被点击了")
+            self.logger.log("regenerate button clicked.", type: .debug)
             self.updateTranslationWithStream(query: self.query)
         }
         visualEffectView.addSubview(regenerateButton)
         
         // 源语言按钮
         let srcLangButton = DropdownLangButton(items: ["简体中文", "English", "繁体中文"]) { selectedItem in
-            print("选择了：\(selectedItem)")
+            self.logger.log("source language select: %{public}@", selectedItem, type: .debug)
             self.languageState.sourceLanguage = selectedItem
         }
         visualEffectView.addSubview(srcLangButton)
         
         // 目标语言按钮
         let tgtLangButton = DropdownLangButton(title: LanguageSelectionState().targetLanguage,items: ["简体中文", "English", "繁体中文"]) { selectedItem in
-            print("选择了：\(selectedItem)")
+            self.logger.log("target language select: %{public}@", selectedItem, type: .debug)
             UserDefaults.standard.set(selectedItem, forKey: "transTargetLanguage")
             self.languageState.targetLanguage = selectedItem
         }
@@ -157,13 +159,13 @@ class TransPanelViewController: NSViewController {
                 }
                 
                 // 打印调试信息
-                print("源语言: \(source), 目标语言: \(target)")
+                self.logger.log("source language: %{public}@, target language: %{public}@", source, target, type: .debug)
                 
                 // 如果 query 非空，调用更新翻译
                 if !self.query.isEmpty {
                     self.updateTranslationWithStream(query: self.query)
                 } else {
-                    print("查询内容为空，跳过翻译")
+                    self.logger.log("Query is empty", type: .info)
                 }
             }
             .store(in: &cancellables)
@@ -309,21 +311,18 @@ class TransPanelViewController: NSViewController {
                     try Task.checkCancellation()
                     await MainActor.run {
                         self.streamBuffer.append(chunk)
-                        print(chunk)
                         self.scrollableTextView.setTextWithTypingEffectStream(streamBuffer: [chunk])
                     }
                 }
             } catch {
                 // 处理错误或取消
                 if Task.isCancelled {
-                    print("任务已取消")
                     self.streamBuffer.removeAll()
                     self.scrollableTextView.setText("")
                     self.scrollableTextView.stopTypingEffect()
-//                    print("left chunk: ", self.streamBuffer)
                 } else {
 //                    self.scrollableTextView.setText(error.localizedDescription)
-                    print("流式翻译失败: \(error)")
+                    logger.log("Streaming translation failed: %{public}@", error.localizedDescription, type: .error)
                 }
             }
         }
@@ -372,13 +371,12 @@ class TransPanelViewController: NSViewController {
             Message(role: "system", content: systemPrompt),
             Message(role: "user", content: query),
         ]
-        print("\n开始非流式聊天。。。")
+        logger.log("Start streaming chat...")
         do {
             let response = try await client.fetchChatCompletion(messages: messages)
-            print(response)
             return response
         } catch {
-            print("翻译失败: \(error)")
+            logger.log("Translation failed: %{public}@", error.localizedDescription, type: .error)
             return "翻译失败，请稍后重试。"
         }
     }
@@ -386,13 +384,10 @@ class TransPanelViewController: NSViewController {
     private func getTranslateResultStream(source: String, target: String, query: String) async throws -> AsyncStream<String> {
         let client = OpenAIChatClient()
         let systemPrompt = "你是一位专业的翻译。请将用户输入的文本由 \(source) 翻译成 \(target)，保持原文的语气和风格。"
-        print(systemPrompt)
         let messages = [
             Message(role: "system", content: systemPrompt),
             Message(role: "user", content: query),
         ]
-        print("\n开始流式聊天。。。")
-        
         return try await client.streamChatCompletion(messages: messages)
     }
     

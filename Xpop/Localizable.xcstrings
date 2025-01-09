@@ -157,6 +157,12 @@
         }
       }
     },
+    "Extension..." : {
+
+    },
+    "Extensions" : {
+
+    },
     "Forbidden Apps" : {
       "localizations" : {
         "zh-Hans" : {
@@ -298,6 +304,7 @@
       }
     },
     "Plugin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -308,6 +315,7 @@
       }
     },
     "Plugin..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {

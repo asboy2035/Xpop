@@ -212,7 +212,6 @@ struct ManageForbiddenAppView: View {
             try iconData.write(to: fileURL)
             return fileURL.path
         } catch {
-            print("Failed to save icon: \(error)")
             return nil
         }
     }

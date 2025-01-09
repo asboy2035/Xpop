@@ -62,6 +62,7 @@ class ProviderManager: ObservableObject {
     @Published var providers: [ModelProvider] = []  // 自动触发视图更新
     private let fileName = "Providers.json"
     private let fileManager = FileManager.default
+    private let logger = Logger.shared
 
     init() {
         loadProviders() // 初始化时加载文件数据
@@ -72,7 +73,7 @@ class ProviderManager: ObservableObject {
         let fileURL = getFileURL()
         guard fileManager.fileExists(atPath: fileURL.path) else {
             providers = [] // 文件不存在时，初始化为空列表
-            print("the file is empty")
+            logger.log("Provider is empty", type: .info)
             return
         }
 
@@ -83,7 +84,7 @@ class ProviderManager: ObservableObject {
                 self.providers = decodedProviders // 更新 providers，触发视图更新
 //            }
         } catch {
-            print("Failed to load providers: \(error)")
+            logger.log("Failed to load providers: %{public}@", error.localizedDescription, type: .error)
         }
     }
 
@@ -109,7 +110,7 @@ class ProviderManager: ObservableObject {
             providers.remove(at: index) // 从内存中移除
             saveProviders()             // 保存到文件
         } else {
-            print("Provider with id \(id) not found.")
+            logger.log("Provider with id %{public}@  not found.", id, type: .error)
         }
     }
     
@@ -119,9 +120,9 @@ class ProviderManager: ObservableObject {
             // 删除对应的 Provider
             if let index = providers.firstIndex(where: { $0.id == id }) {
                 providers.remove(at: index) // 从内存中移除
-                print("Provider with id \(id) deleted.")
+                logger.log("Provider with id %{public}@  deleted.", id, type: .info)
             } else {
-                print("Provider with id \(id) not found.")
+                logger.log("Provider with id %{public}@  not found.", id, type: .error)
             }
         }
         
@@ -137,7 +138,7 @@ class ProviderManager: ObservableObject {
             let data = try JSONEncoder().encode(providers)
             try data.write(to: fileURL, options: .atomic)
         } catch {
-            print("Failed to save providers: \(error)")
+            logger.log("Failed to save providers: %{public}@", error.localizedDescription, type: .error)
         }
     }
     
@@ -168,7 +169,7 @@ class ProviderManager: ObservableObject {
         
         // 查找匹配的 ModelProvider
         guard let selectedProvider = getProvider(by: chosenProviderId) else {
-            print("No provider found with id: \(chosenProviderId)")
+            logger.log("No provider found with id: %{public}@", chosenProviderId, type: .info)
             return nil
         }
         return (selectedProvider.apiKey, selectedProvider.baseURL)

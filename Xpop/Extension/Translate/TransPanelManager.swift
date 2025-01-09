@@ -71,32 +71,6 @@ class TransPanelManager: NSObject, ObservableObject, NSWindowDelegate {
         return NSPoint(x: panelX, y: panelY)
     }
     
-//    func showPanel(query: String) {
-//        self.query = query
-//        let mouseLocation = NSEvent.mouseLocation
-//        let panelWidth: CGFloat = 400
-//        let panelHeight: CGFloat = 600
-//
-//        guard let screen = NSScreen.screens.first(where: { NSPointInRect(mouseLocation, $0.frame) }) else {
-//            let panelX = (NSScreen.main?.frame.width ?? 800 - panelWidth) / 2
-//            let panelY = (NSScreen.main?.frame.height ?? 600 - panelHeight) / 2
-//            createAndShowPanel(at: NSPoint(x: panelX, y: panelY), width: panelWidth, height: panelHeight)
-//            return
-//        }
-//
-//        var panelX = mouseLocation.x
-//        var panelY = mouseLocation.y - panelHeight - 10
-//
-//        if panelX + panelWidth > screen.frame.maxX {
-//            panelX = screen.frame.maxX - panelWidth - 10
-//        }
-//        if panelY < screen.frame.minY {
-//            panelY = mouseLocation.y + 10
-//        }
-//
-//        createAndShowPanel(at: NSPoint(x: panelX, y: panelY), width: panelWidth, height: panelHeight)
-//    }
-
     private func createAndShowPanel(at origin: NSPoint, width: CGFloat, height: CGFloat) {
         let panelRect = NSRect(x: origin.x, y: origin.y, width: width, height: height)
 
