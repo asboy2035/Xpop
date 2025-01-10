@@ -288,11 +288,12 @@ class ExtensionManager: ObservableObject {
     private let extensionListKey = "extensionList"
     
     init() {
-        // 加载系统默认的插件
+        self.loadExtensions()
         self.loadExtensionList()
         self.loadBuildinExtensions()
-        // 加载插件
-        self.loadExtensions()
+        // 保存到 UserDefaults
+        saveExtensionList()
+        
     }
     
     func loadBuildinExtensions() {
@@ -318,6 +319,39 @@ class ExtensionManager: ObservableObject {
             isEnabled: true
         )
         
+        // Copy
+        let copyExtension = Extension(
+            name: "Copy",
+            icon: "symbol:document.on.document",
+            _buildin_type: "_buildin"
+        )
+        let copyExtensionItem = ExtensionItem(
+            name: "_XPOP_BUILDIN_COPY",
+            isEnabled: true
+        )
+        
+        // Cut
+        let cutExtension = Extension(
+            name: "Cut",
+            icon: "symbol:scissors",
+            _buildin_type: "_buildin"
+        )
+        let cutExtensionItem = ExtensionItem(
+            name: "_XPOP_BUILDIN_CUT",
+            isEnabled: true
+        )
+        
+        // Paste
+        let pasteExtension = Extension(
+            name: "Paste",
+            icon: "symbol:document.on.clipboard",
+            _buildin_type: "_buildin"
+        )
+        let pasteExtensionItem = ExtensionItem(
+            name: "_XPOP_BUILDIN_PASTE",
+            isEnabled: true
+        )
+
         // 检查并添加搜索插件
         if !extensionList.contains(where: { $0.name == searchExtensionItem.name }) {
             extensionList.append(searchExtensionItem)
@@ -334,8 +368,29 @@ class ExtensionManager: ObservableObject {
             extensions[translateExtensionItem.name] = translateExtension
         }
         
-        // 保存到 UserDefaults
-        saveExtensionList()
+        // 检查并添加copy插件
+        if !extensionList.contains(where: { $0.name == copyExtensionItem.name }) {
+            extensionList.append(copyExtensionItem)
+        }
+        if extensions[copyExtensionItem.name] == nil {
+            extensions[copyExtensionItem.name] = copyExtension
+        }
+        
+        // 检查并添加cut插件
+        if !extensionList.contains(where: { $0.name == cutExtensionItem.name }) {
+            extensionList.append(cutExtensionItem)
+        }
+        if extensions[cutExtensionItem.name] == nil {
+            extensions[cutExtensionItem.name] = cutExtension
+        }
+        
+        // 检查并添加paste插件
+        if !extensionList.contains(where: { $0.name == pasteExtensionItem.name }) {
+            extensionList.append(pasteExtensionItem)
+        }
+        if extensions[pasteExtensionItem.name] == nil {
+            extensions[pasteExtensionItem.name] = pasteExtension
+        }
     }
     
     // MARK: - Load Extensions
@@ -393,9 +448,6 @@ class ExtensionManager: ObservableObject {
         
         // 将新插件添加到 extensionList 的末尾
         self.extensionList.append(contentsOf: newExtensions)
-        
-        // 保存到 UserDefaults
-        saveExtensionList()
     }
     
     // MARK: - Save Extension List to UserDefaults
@@ -625,14 +677,38 @@ class ExtensionManager: ObservableObject {
 class BuiltInAction {
     static let actions: [String: () -> Void] = [
         "Translate": {
-                Task { @MainActor in
-                    let winManager = AppDelegate.shared
-                    winManager.hideWindow_new()
-                    
-                    var selectedText: String?
-                    selectedText = winManager.selectedText
-                    winManager.panelManager.showPanel(query: selectedText!)
-                }
+            Task { @MainActor in
+                let winManager = AppDelegate.shared
+                winManager.hideWindow_new()
+                
+                var selectedText: String?
+                selectedText = winManager.selectedText
+                winManager.panelManager.showPanel(query: selectedText!)
             }
+        },
+        "Copy": {
+            Task {
+                let kbManager = KeyboardManager.shared
+                let winManager = AppDelegate.shared
+                winManager.hideWindow_new()
+                kbManager.simulateKeyPress(from: "command c")
+            }
+        },
+        "Cut": {
+            Task {
+                let kbManager = KeyboardManager.shared
+                let winManager = AppDelegate.shared
+                winManager.hideWindow_new()
+                kbManager.simulateKeyPress(from: "command x")
+            }
+        },
+        "Paste": {
+            Task {
+                let kbManager = KeyboardManager.shared
+                let winManager = AppDelegate.shared
+                winManager.hideWindow_new()
+                kbManager.simulateKeyPress(from: "command v")
+            }
+        }
     ]
 }

@@ -13,7 +13,6 @@ import Foundation
 import AppKit
 
 // MARK: - Error Handling
-
 /// Enum for text selection errors with user-friendly descriptions.
 enum TextSelectionError: Error {
     // Accessibility & 权限问题
@@ -80,7 +79,6 @@ enum TextSelectionError: Error {
         }
     }
 }
-
 
 // 定义可能的错误类型
 enum CopyMenuError: Error {
