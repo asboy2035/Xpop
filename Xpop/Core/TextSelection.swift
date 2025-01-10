@@ -104,6 +104,8 @@ public class TextSelectionManager: ObservableObject {
     private var lastCheckTime: Date = Date()
     public var lastSelectedText: String?
     private var enableForce: Bool = true
+    
+    private let logger = Logger.shared
 
     public init() {
     }
@@ -141,21 +143,25 @@ public class TextSelectionManager: ObservableObject {
         await MainActor.run {
             self.currentApp = appName
         }
-        
+
         // 5. 尝试依次使用三种方法获取文本
-        var methods: [(AXUIElement) async throws -> String] = [
-            getTextFromSelectedAttribute,
-            getTextFromTextMarker
+        // 定义一个包含方法名称和方法的元组类型
+        typealias TextFetchMethod = (name: String, method: (AXUIElement) async throws -> String)
+        var methods: [TextFetchMethod] = [
+            (name: "getTextFromSelectedAttribute", method: getTextFromSelectedAttribute),
+            (name: "getTextFromTextMarker", method: getTextFromTextMarker)
         ]
 
         // 如果 enableForce 为 true，添加第三种方法
         if enableForce {
-            methods.append { _ in try await self.getTextFromMenubar(for: appRef) }
+            methods.append((name: "getTextFromMenubar", method: { _ in try await self.getTextFromMenubar(for: appRef) }))
         }
-        
+
         for method in methods {
             do {
-                return try await method(focusedElement as! AXUIElement)
+                let selectedText = try await method.method(focusedElement as! AXUIElement)
+                logger.log("SelectText Method: %{public}@", method.name, type: .info)
+                return selectedText
             } catch {
                 // 如果当前方法失败，则继续尝试下一个方法
                 continue
@@ -497,7 +503,7 @@ class CopyMenuFinder {
             // 等待剪贴板更新
             try await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
-            let afterChangeCount = pasteboard.changeCount
+            _ = pasteboard.changeCount
             
             // 检查剪贴板是否更新
             if pasteboard.changeCount != initialChangeCount {
@@ -523,16 +529,23 @@ class CopyMenuFinder {
         var children: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
               let childArray = children as? [AXUIElement] else {
-            throw CopyMenuError.childrenNotFound
+            return nil // 不抛出错误，因为可能没有子元素
         }
 
         for child in childArray {
             var title: CFTypeRef?
             if AXUIElementCopyAttributeValue(child, kAXTitleAttribute as CFString, &title) == .success,
                let titleString = title as? String, copyTitles.contains(titleString) {
-                return child
+                
+                // 找到匹配的菜单项，先尝试返回，如果返回为空，则继续在子菜单中查找
+                if let found = try await searchCopyItemRecursively(child) {
+                    return found
+                } else {
+                    return child
+                }
             }
-
+            
+            // 如果当前子元素不是 Copy 菜单项，则继续递归查找
             if let found = try await searchCopyItemRecursively(child) {
                 return found
             }
@@ -549,3 +562,4 @@ class CopyMenuFinder {
         return false
     }
 }
+
