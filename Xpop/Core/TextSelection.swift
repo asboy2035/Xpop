@@ -95,6 +95,7 @@ enum CopyMenuError: Error {
 
 /// Manages the text selection process.
 public class TextSelectionManager: ObservableObject {
+    @State private var stateManager = MenuActionStateManager.shared
     @Published public var selectedText: String? = ""
     @Published var currentApp: String = ""
     @Published var selectionMethod: String = ""
@@ -154,7 +155,7 @@ public class TextSelectionManager: ObservableObject {
         if enableForce {
             methods.append((name: "getTextFromMenubar", method: { _ in try await self.getTextFromMenubar(for: appRef) }))
         }
-
+        await stateManager.updateStates(for: appRef)
         for method in methods {
             do {
                 let selectedText = try await method.method(focusedElement as! AXUIElement)
@@ -171,12 +172,12 @@ public class TextSelectionManager: ObservableObject {
     }
     
     private func getTextFromMenubar(for element: AXUIElement) async throws -> String {
-        let finder = CopyMenuFinder()
+        let finder = MenuActionFinder()
         let clipboardManager = ClipboardManager()
         // 查找复制菜单项
-        let copyItem = try await finder.findCopyMenuItem(in: element)
+        let copyItem = try await finder.findMenuItem(in: element, action: "Copy")
         // 创建点击复制菜单项的闭包
-        let action = finder.createClickCopyMenuItemAction(for: copyItem)
+        let action = finder.createClickMenuItemAction(for: copyItem, action: "Copy")
         
         // 直接调用 performClipboardAction，将错误完全向上传递
         guard let result = try await clipboardManager.performClipboardAction(action: action, delay: 0.05) else {
@@ -461,69 +462,142 @@ class ClipboardManager {
     }
 }
 
-class CopyMenuFinder {
-    private let copyTitles: Set<String> = [
-        "Copy",  // English
-        "拷贝", "复制",  // Simplified Chinese
-        "拷貝", "複製",  // Traditional Chinese
-        "コピー",  // Japanese
-        "복사",  // Korean
-        "Copier",  // French
-        "Copiar",  // Spanish, Portuguese
-        "Copia",  // Italian
-        "Kopieren",  // German
-        "Копировать",  // Russian
-        // Add other languages as needed
+class MenuActionStateManager: ObservableObject {
+    static let shared = MenuActionStateManager()
+    
+    @Published var canCopy: Bool = false
+    @Published var canCut: Bool = false
+    @Published var canPaste: Bool = false
+    
+    private init() {}
+
+    @MainActor
+    func updateStates(for element: AXUIElement) async {
+        let menuFinder = MenuActionFinder()
+        
+        // 检查 Copy 是否可用
+        do {
+            let _ = try await menuFinder.findMenuItem(in: element, action: "Copy")
+            canCopy = true
+        } catch {
+            print(error.localizedDescription)
+            canCopy = false
+        }
+        
+        // 检查 Cut 是否可用
+        do {
+            let _ = try await menuFinder.findMenuItem(in: element, action: "Cut")
+            canCut = true
+        } catch {
+            canCut = false
+        }
+        
+        // 检查 Paste 是否可用
+        do {
+            let _ = try await menuFinder.findMenuItem(in: element, action: "Paste")
+            canPaste = true
+        } catch {
+            canPaste = false
+        }
+    }
+}
+
+class MenuActionFinder {
+    private let actionTitles: [String: Set<String>] = [
+        "Copy": [
+            "Copy",  // English
+            "拷贝", "复制",  // Simplified Chinese
+            "拷貝", "複製",  // Traditional Chinese
+            "コピー",  // Japanese
+            "복사",  // Korean
+            "Copier",  // French
+            "Copiar",  // Spanish, Portuguese
+            "Copia",  // Italian
+            "Kopieren",  // German
+            "Копировать",  // Russian
+        ],
+        "Cut": [
+            "Cut",  // English
+            "剪切",  // Simplified Chinese
+            "剪下",  // Traditional Chinese
+            "カット",  // Japanese
+            "자르기",  // Korean
+            "Couper",  // French
+            "Cortar",  // Spanish, Portuguese
+            "Taglia",  // Italian
+            "Ausschneiden",  // German
+            "Вырезать",  // Russian
+        ],
+        "Paste": [
+            "Paste",  // English
+            "粘贴",  // Simplified Chinese
+            "貼上",  // Traditional Chinese
+            "ペースト",  // Japanese
+            "붙여넣기",  // Korean
+            "Coller",  // French
+            "Pegar",  // Spanish, Portuguese
+            "Incolla",  // Italian
+            "Einfügen",  // German
+            "Вставить",  // Russian
+        ]
     ]
 
-    /// 查找指定 AXUIElement 中的可用 "Copy" 菜单项
-    func findCopyMenuItem(in element: AXUIElement) async throws -> AXUIElement {
-        guard let copyItem = try await findMenuItemRecursively(in: element) else {
-            throw CopyMenuError.menuItemNotFound
+    /// 查找指定 AXUIElement 中的可用菜单项（Copy, Cut, Paste）
+    func findMenuItem(in element: AXUIElement, action: String) async throws -> AXUIElement {
+        guard let titles = actionTitles[action] else {
+            throw MenuActionError.invalidAction
         }
-        if !isMenuItemEnabled(copyItem) {
-            throw CopyMenuError.menuItemNotEnabled
+        guard let menuItem = try await findMenuItemRecursively(in: element, titles: titles) else {
+            throw MenuActionError.menuItemNotFound
         }
-        return copyItem
+        if !isMenuItemEnabled(menuItem) {
+            
+            throw MenuActionError.menuItemNotEnabled
+        }
+        return menuItem
     }
     
-    /// 创建一个闭包，用于点击指定的 "Copy" 菜单项并返回剪贴板内容
-    func createClickCopyMenuItemAction(for copyItem: AXUIElement) -> () async throws -> String? {
+    /// 创建一个闭包，用于点击指定的菜单项并返回剪贴板内容（仅适用于 Copy 和 Cut）
+    func createClickMenuItemAction(for menuItem: AXUIElement, action: String) -> () async throws -> String? {
         return {
             let pasteboard = NSPasteboard.general
             let initialChangeCount = pasteboard.changeCount
             
             // 执行点击动作
-            let result = AXUIElementPerformAction(copyItem, kAXPressAction as CFString)
+            let result = AXUIElementPerformAction(menuItem, kAXPressAction as CFString)
             if result != .success {
-                throw CopyMenuError.actionFailed
+                throw MenuActionError.actionFailed
             }
             // 等待剪贴板更新
             try await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
             _ = pasteboard.changeCount
             
-            // 检查剪贴板是否更新
-            if pasteboard.changeCount != initialChangeCount {
-                return pasteboard.string(forType: .string)
+            // 检查剪贴板是否更新（仅适用于 Copy 和 Cut）
+            if action == "Copy" || action == "Cut" {
+                if pasteboard.changeCount != initialChangeCount {
+                    return pasteboard.string(forType: .string)
+                } else {
+                    throw MenuActionError.clipboardNotUpdated
+                }
             } else {
-                throw CopyMenuError.clipboardNotUpdated
+                return nil
             }
         }
     }
 
     // MARK: - Private Helper Methods
 
-    private func findMenuItemRecursively(in element: AXUIElement) async throws -> AXUIElement? {
+    private func findMenuItemRecursively(in element: AXUIElement, titles: Set<String>) async throws -> AXUIElement? {
         var menuBar: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXMenuBarAttribute as CFString, &menuBar) == .success else {
-            throw CopyMenuError.menuBarNotFound
+            throw MenuActionError.menuBarNotFound
         }
         let menuBarElement = menuBar as! AXUIElement
-        return try await searchCopyItemRecursively(menuBarElement)
+        return try await searchMenuItemRecursively(menuBarElement, titles: titles)
     }
 
-    private func searchCopyItemRecursively(_ element: AXUIElement) async throws -> AXUIElement? {
+    private func searchMenuItemRecursively(_ element: AXUIElement, titles: Set<String>) async throws -> AXUIElement? {
         var children: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
               let childArray = children as? [AXUIElement] else {
@@ -533,18 +607,18 @@ class CopyMenuFinder {
         for child in childArray {
             var title: CFTypeRef?
             if AXUIElementCopyAttributeValue(child, kAXTitleAttribute as CFString, &title) == .success,
-               let titleString = title as? String, copyTitles.contains(titleString) {
+               let titleString = title as? String, titles.contains(titleString) {
                 
                 // 找到匹配的菜单项，先尝试返回，如果返回为空，则继续在子菜单中查找
-                if let found = try await searchCopyItemRecursively(child) {
+                if let found = try await searchMenuItemRecursively(child, titles: titles) {
                     return found
                 } else {
                     return child
                 }
             }
             
-            // 如果当前子元素不是 Copy 菜单项，则继续递归查找
-            if let found = try await searchCopyItemRecursively(child) {
+            // 如果当前子元素不是目标菜单项，则继续递归查找
+            if let found = try await searchMenuItemRecursively(child, titles: titles) {
                 return found
             }
         }
@@ -559,5 +633,16 @@ class CopyMenuFinder {
         }
         return false
     }
+}
+
+// 定义可能的错误类型
+enum MenuActionError: Error {
+    case invalidAction
+    case menuBarNotFound
+    case childrenNotFound
+    case menuItemNotFound
+    case menuItemNotEnabled
+    case actionFailed
+    case clipboardNotUpdated
 }
 

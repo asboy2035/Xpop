@@ -116,6 +116,7 @@ struct BlurEffectWithOpacityView: NSViewRepresentable {
 struct PopView: View {
     @ObservedObject var appDelegate = AppDelegate.shared
     @ObservedObject var extensionManager = ExtensionManager.shared
+    @ObservedObject var menuActionStateManager = MenuActionStateManager.shared
 
     var body: some View {
         ZStack {
@@ -140,7 +141,17 @@ struct PopView: View {
                 .id(appDelegate.isExtension) // Add an id here
                 ForEach(extensionManager.extensionList) { extItem in
                     if extItem.isEnabled {
-                        ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
+                        if extItem.name == "_XPOP_BUILDIN_CUT" {
+                            if menuActionStateManager.canCut {
+                                ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
+                            }
+                        } else if extItem.name == "_XPOP_BUILDIN_PASTE" {
+                            if menuActionStateManager.canPaste {
+                                ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
+                            }
+                        } else {
+                            ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
+                        }
                     }
                 }
             }
