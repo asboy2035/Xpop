@@ -11,3 +11,8 @@
 
 > [!IMPORTANT]
 > This project is under active development and may have bugs. Inspired by PopClip, I’m building an open-source alternative with plans to fully support its plugin system (currently limited). As this is my first Swift project, the code will evolve as I learn and improve. Feedback is welcome!
+
+
+## Acknowledgement
+
+This repo benefits from [Easydict](https://github.com/tisfeng/Easydict), [PopClip-Extensions](https://github.com/pilotmoon/PopClip-Extensions). Thanks for their wonderful works.

@@ -107,6 +107,16 @@
         }
       }
     },
+    "Enable Force Select Text" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启强制选词"
+          }
+        }
+      }
+    },
     "Enter API key" : {
       "localizations" : {
         "zh-Hans" : {
@@ -313,28 +323,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "模型供应商名称"
-          }
-        }
-      }
-    },
-    "Plugin" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "插件"
-          }
-        }
-      }
-    },
-    "Plugin..." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "插件.."
           }
         }
       }

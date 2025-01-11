@@ -12,6 +12,8 @@ struct ManageModelView: View {
     @State private var showSelection = false
     @State private var selectedApps: Set<String> = []
     @State private var showingSheet = false
+    
+    @Environment(\.locale) var locale
 
     var body: some View {
         VStack() {

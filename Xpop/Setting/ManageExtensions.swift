@@ -98,6 +98,8 @@ struct ExtensionManagerView: View {
     @State private var isEditing = false
     @State private var selectedPluginForSettings: Extension? = nil
     @State private var showOtherView = false
+    
+    @Environment(\.locale) var locale
 
     var body: some View {
         

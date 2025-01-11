@@ -12,6 +12,8 @@ struct ManageForbiddenAppView: View {
     @State private var forbiddenApps: [AppInfo] = []
     @State private var showSelection = false
     @State private var selectedApps: Set<String> = []
+    
+    @Environment(\.locale) var locale
 
     var body: some View {
         VStack() {
@@ -221,6 +223,8 @@ struct ForbiddenAppRow: View {
     let appInfo: AppInfo
     @Binding var showSelection: Bool
     @Binding var selectedApps: Set<String>
+    
+    @Environment(\.locale) var locale
 
     var body: some View {
         HStack {

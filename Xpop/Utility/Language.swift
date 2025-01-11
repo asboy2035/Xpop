@@ -24,12 +24,12 @@ class LanguageManager: ObservableObject {
     ]
     
     let language2Code: [String: String] = [
-        "简体中文": "zh",
+        "简体中文": "zh-Hans",
         "English": "en"
     ]
     
     // 当前选中的语言名称，默认值是系统语言名称
-    @Published var selectedLanguage: String {
+    @Published var selectedLanguage: String{
         didSet {
             logger.log("changelanguage to : %{public}@", selectedLanguage, type: .info)
             // 当语言更改时，通知系统刷新语言
@@ -41,6 +41,9 @@ class LanguageManager: ObservableObject {
         }
     }
     
+    // 当前语言环境
+    @Published var currentLocale: Locale = .current
+    
     private init() {
         // 初始化从 UserDefaults 加载语言
         let savedLanguageCode = UserDefaults.standard.string(forKey: "selectedLanguageCode")
@@ -50,6 +53,8 @@ class LanguageManager: ObservableObject {
         self.languageCode = savedLanguageCode
         // 转换为语言全称
         self.selectedLanguage = languageMap[savedLanguageCode] ?? "Unknown"
+        // 初始化当前语言环境
+        self.currentLocale = Locale(identifier: savedLanguageCode)
     }
 
     func getAvailableLanguages() -> [String] {
@@ -67,6 +72,8 @@ class LanguageManager: ObservableObject {
         guard let newCode = language2Code[languageName],
               availableLocalizations.contains(newCode) else { return }
         selectedLanguage = languageName
+        // 更新语言环境
+        currentLocale = Locale(identifier: newCode)
     }
 
     // 保存语言选择
@@ -76,8 +83,16 @@ class LanguageManager: ObservableObject {
         UserDefaults.standard.set([languageCode], forKey: "AppleLanguages")
         UserDefaults.standard.synchronize()
     }
-
+    
+    // 通知语言更改
     private func notifyLanguageChange() {
-        // 需要在这里实现语言刷新逻辑
+        // 可以通过 NotificationCenter 或其他方式通知视图更新
+        NotificationCenter.default.post(name: .languageDidChange, object: nil)
     }
 }
+
+// 定义语言更改通知
+extension Notification.Name {
+    static let languageDidChange = Notification.Name("languageDidChange")
+}
+
