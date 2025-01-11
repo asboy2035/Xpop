@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SettingView: View {
     @EnvironmentObject var manager: ProviderManager // 自动获取注入的实例
-    @Environment(\.colorScheme) var colorScheme
+   
     
     @State var chosenProviderId: String = UserDefaults.standard.string(forKey: "chosenProviderId") ?? ""
     @State var chosenProviderName: String = UserDefaults.standard.string(forKey: "chosenProviderName") ?? ""
@@ -18,73 +18,52 @@ struct SettingView: View {
     @ObservedObject var languageManager = LanguageManager.shared
     @ObservedObject var settingManager = SettingsManager.shared
     
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // General
+            Form {
+                Section {
                     let avaliableLanguage = languageManager.getAvailableLanguages()
-                    SettingsSection(title: String(localized: "General")) {
-                        SettingLanguageRow(title: String(localized: "Language"), supportLanguage: avaliableLanguage, chosenLanguage: $languageManager.selectedLanguage)
+                    SettingsPickerRow(title: String(localized: "Language"), options: avaliableLanguage, chosenOption: $languageManager.selectedLanguage)
                     
-                        Divider()
-                            .background(
-                                colorScheme == .dark
-                                    ? Color(NSColor(calibratedWhite: 0.1, alpha: 1.0)) // 深色背景
-                                    : Color(NSColor(calibratedWhite: 0.9, alpha: 1.0)) // 浅色背景
-                            )
-                            .padding(.horizontal, 16)
-                        
-                        NavigationLink(destination: ManageForbiddenAppView()){
-                            SettingsRow(title: String(localized: "Forbidden Apps"), detail: ">")
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(Color(NSColor.labelColor))
+                    NavigationLink(destination: ManageForbiddenAppView()){
+                        SettingsRow(title: String(localized: "Forbidden Apps"), detail: "")
                     }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(Color(NSColor.labelColor))
                     
-                    
-                    //  model
-                    SettingsSection(title: String(localized: "Model")) {
-                        let selections: [String: String] = Dictionary(uniqueKeysWithValues: manager.providers.map { ($0.id, $0.name) })
-                        SettingsModelProviderRow(title: String(localized: "Provider"), selections: selections, selectedId: $chosenProviderId, selectedProvider: $chosenProviderName, selectedModels: $chosenModels, selectedModel: $chosenModel)
-                        
-                        Divider()
-                            .background(
-                                colorScheme == .dark
-                                    ? Color(NSColor(calibratedWhite: 0.1, alpha: 1.0)) // 深色背景
-                                    : Color(NSColor(calibratedWhite: 0.9, alpha: 1.0)) // 浅色背景
-                            )
-                            .padding(.horizontal, 16)
-                        
-                        SettingsModelRow(title: String(localized: "Model Name"), selections: chosenModels, selectedModel: $chosenModel)
-                        Divider()
-                            .background(
-                                colorScheme == .dark
-                                    ? Color(NSColor(calibratedWhite: 0.1, alpha: 1.0)) // 深色背景
-                                    : Color(NSColor(calibratedWhite: 0.9, alpha: 1.0)) // 浅色背景
-                            )
-                            .padding(.horizontal, 16)
-                        
-                        NavigationLink(destination: ManageModelView()){
-                            SettingsRow(title: String(localized: "Manage..."), detail: ">")
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(Color(NSColor.labelColor))
-                    }
-                    
-                    // Extensions
-                    SettingsSection(title: String(localized: "Extensions")) {
-                        NavigationLink(destination: ExtensionManagerView()){
-                            SettingsRow(title: String(localized: "Extension..."), detail: ">")
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(Color(NSColor.labelColor))
-                    }
+                    SettingsToggleRow(title: "Enable Force Select Text", isOn: true)
+                } header: {
+                    Text("General")
                 }
-                .padding()
+                
+                Section {
+                    let selections: [String: String] = Dictionary(uniqueKeysWithValues: manager.providers.map { ($0.id, $0.name) })
+                    SettingsModelProviderRow(title: String(localized: "Provider"), selections: selections, selectedId: $chosenProviderId, selectedProvider: $chosenProviderName, selectedModels: $chosenModels, selectedModel: $chosenModel)
+                    SettingsPickerRow(title: String(localized: "Model Name"), options: chosenModels, chosenOption: $chosenModel)
+                    
+                    NavigationLink(destination: ManageModelView()){
+                        SettingsRow(title: String(localized: "Manage..."), detail: "")
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(Color(NSColor.labelColor))
+                } header: {
+                    Text("Model")
+                }
+                
+                Section {
+                    NavigationLink(destination: ExtensionManagerView()){
+                        SettingsRow(title: String(localized: "Extension..."), detail: "")
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(Color(NSColor.labelColor))
+                } header: {
+                    Text("Extensions")
+                }
+                
             }
-            .background(Color.gray.opacity(0)) // Light gray background
+            .formStyle(.grouped)
             .navigationTitle(String(localized: "Settings"))
         }
         .onChange(of: chosenProviderId) {
@@ -101,7 +80,6 @@ struct SettingView: View {
         }
         .onChange(of: languageManager.selectedLanguage){
             UserDefaults.standard.set(languageManager.selectedLanguage, forKey: "selectedLanguage")
-            print("selectedLanguage: \(languageManager.selectedLanguage)")
         }
     }
 }
@@ -138,25 +116,16 @@ struct SettingsRow: View {
     var isToggle: Bool = false
     
     var body: some View {
-        Button(action: {
-            // Add button action here
-            print("\(title) tapped")
-        }) {
-            HStack {
-                Text(title)
+        HStack {
+            Text(title)
+                .font(.body)
+            Spacer()
+            if !detail.isEmpty {
+                Text(detail)
                     .font(.body)
-                Spacer()
-                if !detail.isEmpty {
-                    Text(detail)
-                        .font(.body)
-                        .foregroundColor(.gray)
-                }
+                    .foregroundColor(.gray)
             }
-            .padding()
-            .frame(height: 40) // 设置固定高度，例如 44
         }
-        .buttonStyle(RowButtonStyle())
-
     }
 }
 
@@ -170,10 +139,9 @@ struct SettingsToggleRow: View {
                 .font(.body)
             Spacer()
             Toggle("", isOn: $isOn)
+                .toggleStyle(SwitchToggleStyle())
                 .labelsHidden()
         }
-        .padding()
-        .background(Color.clear)
     }
 }
 
@@ -206,8 +174,6 @@ struct SettingsModelProviderRow: View {
                 selectedModel = selectedModels[0]
             }
         }
-        .padding()
-        .frame(height: 40) // 设置固定高度，例如 40
     }
 }
 
@@ -236,8 +202,27 @@ struct SettingsModelRow: View {
                 selectedModel = firstValue
             }
         }
-        .padding()
-        .frame(height: 40) // 设置固定高度，例如 40
+    }
+}
+
+struct SettingsPickerRow: View {
+    let title: String
+    let options: [String]
+    @Binding var chosenOption: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.body)
+            Spacer()
+            Picker("", selection: $chosenOption) {
+                ForEach(options, id: \.self) { option in
+                    Text(option).tag(option)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .frame(width: 150)
+        }
     }
 }
 
@@ -267,8 +252,6 @@ struct SettingLanguageRow: View {
                 chosenLanguage = firstValue
             }
         }
-        .padding()
-        .frame(height: 40) // 设置固定高度，例如 40
     }
 }
 
