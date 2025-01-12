@@ -13,7 +13,7 @@ class StatusBarManager: NSObject {
     private var enableMenuItem: NSMenuItem?
     private var menu: NSMenu?
     
-    private var eventMonitor: MouseEventMonitor?
+    private var eventMonitor: InputEventMonitor?
     
     private let logger = Logger.shared
 
@@ -32,7 +32,7 @@ class StatusBarManager: NSObject {
         }
     }
 
-    init(eventMonitor: MouseEventMonitor) {
+    init(eventMonitor: InputEventMonitor) {
         self.isEnabled = UserDefaults.standard.bool(forKey: userDefaultsKey)
         self.eventMonitor = eventMonitor
 

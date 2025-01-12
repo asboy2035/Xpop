@@ -19,7 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var hideTimer: Timer? // Timer for hiding the window
     var lastMouseLocation: NSPoint?
     
-    public let eventMonitor = MouseEventMonitor()
+    public let eventMonitor = InputEventMonitor()
     var selectedText: String?
     var lastSelectedText: String?
     
@@ -79,7 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window.acceptsMouseMovedEvents = true
     }
 
-    private func setupStatusBar(eventMonitor: MouseEventMonitor) {
+    private func setupStatusBar(eventMonitor: InputEventMonitor) {
         statusBarManager = StatusBarManager(eventMonitor: eventMonitor)
         statusBarManager.addMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: "", target: self)
         statusBarManager.addMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "", target: self)
@@ -121,10 +121,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             self.hideWindowWithAnimation()
         }
         
+        
         eventMonitor.addCombination(doubleClick)
         eventMonitor.addCombination(dragAndDrop)
         eventMonitor.addCombination(scrollCombination)
-        eventMonitor.addCombination(CustomMouseEventHandler { event in
+        eventMonitor.addCombination(CustomInputEventHandler { event in
             switch event {
             case .mouseDown(_):
                 Task { @MainActor in
@@ -143,6 +144,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             case .mouseMoved(_):
                 Task { @MainActor in
                     self.handleMouseMoved()
+                }
+            case .keyDown(_):
+                Task { @MainActor in
+                    self.hideWindow_new()
+                }
+            case .keyUp(_):
+                Task { @MainActor in
+                    self.hideWindow_new()
                 }
             }
             return false
