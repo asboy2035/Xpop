@@ -293,7 +293,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered, defer: false)
 
-        settingsWindow.title = "Settings"
         settingsWindow.contentView = NSHostingView(rootView: SettingView()
             .environmentObject(ProviderManager.shared)
             .environmentObject(SettingsManager.shared)

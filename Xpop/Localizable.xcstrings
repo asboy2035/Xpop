@@ -247,6 +247,9 @@
         }
       }
     },
+    "Key" : {
+      "extractionState" : "manual"
+    },
     "Language" : {
       "localizations" : {
         "zh-Hans" : {

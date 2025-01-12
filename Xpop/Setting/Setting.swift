@@ -14,12 +14,13 @@ struct SettingView: View {
     @State var chosenProviderName: String = UserDefaults.standard.string(forKey: "chosenProviderName") ?? ""
     @State var chosenModels: [String] = UserDefaults.standard.stringArray(forKey: "chosenModels") ?? [""]
     @State var chosenModel: String = UserDefaults.standard.string(forKey: "chosenModel") ?? ""
+    @State var enableForceCopy: Bool = UserDefaults.standard.bool(forKey: "enableForceCopy")
     @ObservedObject var languageManager = LanguageManager.shared
     @ObservedObject var settingManager = SettingsManager.shared
     
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.locale) var locale
-
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -33,7 +34,7 @@ struct SettingView: View {
                     .buttonStyle(.borderless)
                     .foregroundColor(Color(NSColor.labelColor))
                     
-                    SettingsToggleRow(title: "Enable Force Select Text", isOn: true)
+                    SettingsToggleRow(title: "Enable Force Select Text", isOn: $enableForceCopy)
                 } header: {
                     Text("General")
                 }
@@ -63,10 +64,11 @@ struct SettingView: View {
                 }
                 
             }
+            .navigationTitle(Text("Settings")) // Use a predefined style)
             .formStyle(.grouped)
-            .navigationTitle(Text("Settings"))
-            .environment(\.locale, languageManager.currentLocale) // 设置语言环境
+            
         }
+        .environment(\.locale, languageManager.currentLocale) // 设置语言环境
         .onChange(of: chosenProviderId) {
             UserDefaults.standard.set(chosenProviderId, forKey: "chosenProviderId")
         }
@@ -78,6 +80,9 @@ struct SettingView: View {
         }
         .onChange(of: chosenModel) {
             UserDefaults.standard.set(chosenModel, forKey: "chosenModel")
+        }
+        .onChange(of: enableForceCopy) {
+            UserDefaults.standard.set(enableForceCopy, forKey: "enableForceCopy")
         }
         .onChange(of: languageManager.selectedLanguage) { newLanguage in
             languageManager.setLanguage(to: newLanguage)
@@ -108,7 +113,7 @@ struct SettingsRow: View {
 
 struct SettingsToggleRow: View {
     let title: LocalizedStringKey
-    @State var isOn: Bool
+    @Binding var isOn: Bool
     
     @Environment(\.locale) var locale
     

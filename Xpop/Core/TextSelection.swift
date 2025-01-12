@@ -102,19 +102,9 @@ public class TextSelectionManager: ObservableObject {
 
     private var lastCheckTime: Date = Date()
     public var lastSelectedText: String?
-    private var enableForce: Bool = true
-    
     private let logger = Logger.shared
 
     public init() {
-    }
-    
-    public func eableForceCopy() {
-        enableForce = true
-    }
-    
-    public func disableForceCopy() {
-        enableForce = false
     }
     
     public func getSelectedText() async throws -> String {
@@ -151,8 +141,10 @@ public class TextSelectionManager: ObservableObject {
             (name: "getTextFromTextMarker", method: getTextFromTextMarker)
         ]
 
+        let enableForce: Bool = UserDefaults.standard.bool(forKey: "enableForceCopy")
         // 如果 enableForce 为 true，添加第三种方法
         if enableForce {
+            print("force copy")
             methods.append((name: "getTextFromMenubar", method: { _ in try await self.getTextFromMenubar(for: appRef) }))
         }
         await stateManager.updateStates(for: appRef)
