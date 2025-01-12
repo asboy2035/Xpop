@@ -18,15 +18,16 @@ class StatusBarManager: NSObject {
     private let logger = Logger.shared
 
     private let userDefaultsKey = "isXpopEnabled"
+
     private var isEnabled: Bool {
         didSet {
+            print("isEnabled: \(isEnabled)")
             UserDefaults.standard.set(isEnabled, forKey: userDefaultsKey)
             if isEnabled {
                 eventMonitor!.startGlobalMonitoring()
             } else {
                 eventMonitor?.stopMonitoring()
             }
-            
             updateButtonAppearance()
         }
     }
@@ -40,6 +41,20 @@ class StatusBarManager: NSObject {
         }
         super.init()
         setupStatusBar()
+        // 监听 effectiveAppearance 的变化
+        NSApp.addObserver(self, forKeyPath: "effectiveAppearance", options: .new, context: nil)
+    }
+    
+    deinit {
+        // 移除监听
+        NSApp.removeObserver(self, forKeyPath: "effectiveAppearance")
+    }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "effectiveAppearance" {
+            // 当 effectiveAppearance 变化时，更新菜单外观
+            updateMenuAppearance()
+        }
     }
 
     private func setupStatusBar() {
@@ -49,6 +64,7 @@ class StatusBarManager: NSObject {
             if let appIcon = NSImage(named: "AppIcon") {
                 appIcon.size = NSSize(width: 24, height: 24)
                 button.image = appIcon
+                button.alphaValue = isEnabled ? 1.0 : 0.4
             }
             
             // 设置按钮的目标动作
@@ -70,6 +86,7 @@ class StatusBarManager: NSObject {
         if let menu = menu {
             let point = NSPoint(x: 0, y: NSStatusBar.system.thickness)
             menu.popUp(positioning: nil, at: point, in: sender)
+            
         }
     }
 
@@ -81,11 +98,19 @@ class StatusBarManager: NSObject {
 
     private func buildMenu() {
         menu = NSMenu()
+        updateMenuAppearance()
         enableMenuItem = createEnableMenuItem()
         menu?.addItem(enableMenuItem!)
         menu?.addItem(NSMenuItem.separator())
+        
     }
 
+    @objc private func updateMenuAppearance() {
+        if let menu = menu {
+            menu.appearance = NSApp.effectiveAppearance
+        }
+    }
+    
     private func createEnableMenuItem() -> NSMenuItem {
         let enableView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 30))
 
@@ -93,6 +118,7 @@ class StatusBarManager: NSObject {
         enableLabel.frame = NSRect(x: 12, y: 5, width: 80, height: 18)
         enableLabel.font = NSFont.boldSystemFont(ofSize: 14)
         enableView.addSubview(enableLabel)
+
 
         enableSwitch = NSSwitch()
         enableSwitch?.frame = NSRect(x: 140, y: 5, width: 60, height: 18)
