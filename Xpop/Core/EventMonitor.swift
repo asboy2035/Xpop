@@ -17,7 +17,7 @@ enum MouseEvent {
     case scrollWheel(NSEvent)
 }
 
-// 定义一个抽象的鼠标事件组合
+// 定义一个抽象的鼠标事件组合    
 protocol MouseEventCombination {
     var identifier: String { get }
     func handleEvent(_ event: MouseEvent) -> Bool

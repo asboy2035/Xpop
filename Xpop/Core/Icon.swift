@@ -38,7 +38,7 @@ struct CustomImage: View {
     private var iconText: String {
         let components = iconString.components(separatedBy: " ")
         let textComponents = components.filter { !$0.hasPrefix("symbol:") && !$0.contains("=") }
-        return String(textComponents.last?.prefix(3) ?? "")
+        return String(textComponents.last?.prefix(8) ?? "")
     }
     
     private var isSFSymbol: Bool {

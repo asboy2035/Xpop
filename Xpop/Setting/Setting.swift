@@ -62,7 +62,6 @@ struct SettingView: View {
                 } header: {
                     Text("Extensions")
                 }
-                
             }
             .navigationTitle(Text("Settings")) // Use a predefined style)
             .formStyle(.grouped)

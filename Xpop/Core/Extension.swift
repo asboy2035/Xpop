@@ -64,7 +64,19 @@ class Extension: Identifiable {
         self.name = name
         
         // 当 icon 为空时，使用 name 来赋值 icon
-        self.icon = icon ?? name
+        if let name = name, icon == nil {
+            let words = name.components(separatedBy: " ")
+            if words.count > 1 {
+                // 如果 name 有多个单词，取前三个单词的首字母并大写
+                let initials = words.prefix(3).map { String($0.first!).uppercased() }
+                self.icon = initials.joined()
+            } else {
+                // 如果 name 只有一个单词，取前8个字符
+                self.icon = String(name.prefix(8))
+            }
+        } else {
+            self.icon = icon
+        }
         
         // Optional properties
         self.identifier = identifier

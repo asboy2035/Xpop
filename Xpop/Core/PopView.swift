@@ -36,7 +36,6 @@ struct ExtensionButton: View {
     @ObservedObject var appDelegate = AppDelegate.shared
 
     var body: some View {
-        // 使用 CustomIconView 作为 Button 的 label
         Button(action: {
             if ext._buildin_type == "_buildin" {
                 BuiltInAction.actions[ext.name!]?()
@@ -45,13 +44,26 @@ struct ExtensionButton: View {
             }
             appDelegate.hideWindow_new() // 点击按钮后隐藏窗口
         }) {
-            CustomImage(iconString: ext.icon!, size: 30)
-                .foregroundColor(isHovered ? Color.white : Color.primary)
+            // 如果有 icon，显示 CustomImage；否则显示 Text
+            if let icon = ext.icon, !icon.isEmpty {
+                CustomImage(iconString: icon, size: 30)
+                    .foregroundColor(isHovered ? Color.white : Color.primary)
+                
+            } else if let name = ext.name, !name.isEmpty {
+                Text(name)
+                    .foregroundColor(isHovered ? Color.white : Color.primary)
+                    .lineLimit(1) // 限制为单行
+                    .fixedSize(horizontal: true, vertical: false) // 确保文本完整显示
+            } else {
+                // 如果 icon 和 name 都为空，显示一个占位符（可选）
+                Image(systemName: "questionmark.circle") // 使用系统图标作为占位符
+                    .foregroundColor(isHovered ? Color.white : Color.primary)
+            }
         }
         .buttonStyle(PlainButtonStyle())
-        .frame(minWidth: 40, maxWidth: 200, maxHeight: .infinity) // 设置 frame，并允许垂直方向扩展
+        .frame(minWidth: 40, maxWidth: .infinity, maxHeight: .infinity) // 设置灵活的宽度和高度
         .background(isHovered ? Color.blue.opacity(0.8) : Color.clear)
-        .contentShape(Rectangle())
+        .contentShape(Rectangle()) // 确保整个区域可点击
         .onHover { hovering in
             isHovered = hovering
         }

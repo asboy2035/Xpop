@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - PluginRow 视图
+// MARK: - ExtensionRow 视图
 struct ExtensionRow: View {
     let ext: Extension
     let isEditing: Bool
@@ -40,7 +40,9 @@ struct ExtensionRow: View {
                     .frame(width: 24, height: 24)
                     .transition(.opacity)
                 }
-                CustomImage(iconString: ext.icon!)
+                if let icon = ext.icon, !icon.isEmpty {
+                    CustomImage(iconString: ext.icon!)
+                }
 //                    .foregroundColor(Color(NSColor.labelColor))
 //                    .transition(.opacity)
 
