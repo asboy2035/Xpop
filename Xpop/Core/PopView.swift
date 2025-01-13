@@ -46,7 +46,7 @@ struct ExtensionButton: View {
         }) {
             // 如果有 icon，显示 CustomImage；否则显示 Text
             if let icon = ext.icon, !icon.isEmpty {
-                CustomImage(extName: ext.name!, iconString: icon, size: 25)
+                CustomImage(extName: ext.name!, iconString: icon, size: 28)
                     .foregroundColor(isHovered ? Color.white : Color.primary)
                 
             } else if let name = ext.name, !name.isEmpty {

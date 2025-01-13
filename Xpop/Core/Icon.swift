@@ -98,9 +98,11 @@ struct CustomImage: View {
         if isPNGImage {
             return AnyView(
                 Image(nsImage: loadImageFromFileSystem(imageName: pngImageName))
+                    .renderingMode(.template) // 正确应用于 Image
                     .resizable()
                     .scaledToFit()
-                    .frame(width: size, height: size)
+                    .frame(width: size - 5, height: size - 5)
+                    .foregroundStyle(.primary) // 使用系统主色
             )
         } else if parsedModifiers["search"] == "true" {
             return AnyView(
