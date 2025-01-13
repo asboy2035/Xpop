@@ -15,7 +15,7 @@ struct CustomImage: View {
     
     @Environment(\.colorScheme) private var colorScheme
     
-    init(extName: String, iconString: String, size: CGFloat = 40) {
+    init(extName: String, iconString: String, size: CGFloat = 30) {
         self.extName = extName
         self.iconString = iconString
         self.size = size

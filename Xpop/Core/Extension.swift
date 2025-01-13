@@ -22,7 +22,7 @@ class Extension: Identifiable {
     var options: [[String: Any]]?
     var optionsTitle: LocalizedStringKey?
     var entitlements: [String]?
-    var actions: [[String: Any]]?
+    var action: [String: Any]?
     
     var url: String?
     var keyCombo: String?
@@ -57,7 +57,7 @@ class Extension: Identifiable {
          options: [[String: Any]]? = nil,
          optionsTitle: LocalizedStringKey? = nil,
          entitlements: [String]? = nil,
-         actions: [[String: Any]]? = nil,
+         action: [String: Any]? = nil,
          url: String? = nil,
          keyCombo: String? = nil,
          keyCombos: [String]? = nil,
@@ -94,19 +94,25 @@ class Extension: Identifiable {
         self.options = options
         self.optionsTitle = optionsTitle
         self.entitlements = entitlements
-        self.actions = actions
+        self.action = action
         self.url = url
         self.keyCombo = keyCombo
         self.keyCombos = keyCombos
         self.shortcutName = shortcutName
         self.serviceName = serviceName
-        self.shellScript = shellScript
-        self.shellScriptFile = shellScriptFile // 新增：初始化 shellScriptFile
-        self.interpreter = interpreter
         
-        self._buildin_type = _buildin_type
-        // Plugin state
-        self.isEnabled = isEnabled
+        // 处理脚本字段
+        if let action = action {
+            // 如果 action 存在，优先从 action 中提取脚本字段
+            self.shellScript = action["shellscript"] as? String ?? shellScript
+            self.shellScriptFile = action["shell script file"] as? String ?? shellScriptFile
+            self.interpreter = action["interpreter"] as? String ?? interpreter
+        } else {
+            // 如果 action 不存在，直接从最外层的字段中提取
+            self.shellScript = shellScript
+            self.shellScriptFile = shellScriptFile
+            self.interpreter = interpreter
+        }
     }
     
     // MARK: - 判断 action 类型
@@ -250,8 +256,8 @@ class Extension: Identifiable {
         if let entitlements = self.entitlements {
             yamlDict["entitlements"] = entitlements
         }
-        if let actions = self.actions {
-            yamlDict["actions"] = actions
+        if let action = self.action {
+            yamlDict["action"] = action
         }
         if let url = self.url {
             yamlDict["url"] = url
@@ -282,7 +288,7 @@ class Extension: Identifiable {
         do {
             let yamlString = try Yams.dump(object: yamlDict)
             // 在 YAML 字符串前添加 #popclip 注释
-            return "#popclip\n" + yamlString
+            return "#xpop\n" + yamlString
         } catch {
             throw ExtensionError.invalidYAML("Failed to convert to YAML: \(error)")
         }
@@ -298,7 +304,7 @@ class Extension: Identifiable {
         var errorDescription: String? {
             switch self {
             case .invalidHeader:
-                return "YAML string must start with '#popclip' or '# popclip'."
+                return "YAML string must start with '#popclip' or '# popclip' or '#xpop' or '# xpop'."
             case .invalidYAML(let message):
                 return "Invalid YAML format: \(message)"
             case .missingRequiredField(let field):
@@ -583,7 +589,7 @@ class ExtensionManager: ObservableObject {
     }
     // MARK: - 检查字符串是否以 #popclip 或 # popclip 开头
     static func isExtensionString(_ yamlString: String) -> Bool {
-        return yamlString.starts(with: "#popclip") || yamlString.starts(with: "# popclip")
+        return yamlString.starts(with: "#popclip") || yamlString.starts(with: "# popclip") || yamlString.starts(with: "#xpop") || yamlString.starts(with: "# xpop")
     }
     
     // MARK: - 从 YAML 字符串解析扩展
@@ -622,17 +628,16 @@ class ExtensionManager: ObservableObject {
             options: yamlDict["options"] as? [[String: Any]],
             optionsTitle: (yamlDict["options title"] as? String).map { LocalizedStringKey($0) },
             entitlements: yamlDict["entitlements"] as? [String],
-            actions: yamlDict["actions"] as? [[String: Any]],
+            action: yamlDict["action"] as? [String: Any],
             url: yamlDict["url"] as? String,
             keyCombo: yamlDict["key combo"] as? String,
             keyCombos: yamlDict["key combos"] as? [String],
             shortcutName: yamlDict["shortcut name"] as? String,
             serviceName: yamlDict["service name"] as? String,
-            
             shellScript: yamlDict["shell script"] as? String,
+            shellScriptFile: yamlDict["shell script file"] as? String,
             interpreter: yamlDict["interpreter"] as? String
         )
-        
         return xpopExtension
     }
     

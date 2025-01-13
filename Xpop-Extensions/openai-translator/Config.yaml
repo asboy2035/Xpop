@@ -1,0 +1,7 @@
+# xpop
+name: openai-translator
+icon: icon.png
+identifier: xyz.yetone.apps.openai-translator.clip-extensions.xpopext
+description: Translate text with OpenAI Translator.
+action:
+    shell script file: openai-translator.sh
