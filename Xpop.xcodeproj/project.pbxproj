@@ -37,6 +37,11 @@
 			path = Xpop;
 			sourceTree = "<group>";
 		};
+		FD572FF82D3520DB00384B88 /* Script */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Script;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +62,7 @@
 				FD8F630D2D2E693700C632D7 /* .gitignore */,
 				FD8F63132D2E693700C632D7 /* README.md */,
 				FD0DC1F82D2E18F300B1676A /* Xpop */,
+				FD572FF82D3520DB00384B88 /* Script */,
 				FD0DC1F72D2E18F300B1676A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -86,6 +92,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FD0DC1F82D2E18F300B1676A /* Xpop */,
+				FD572FF82D3520DB00384B88 /* Script */,
 			);
 			name = Xpop;
 			packageProductDependencies = (
