@@ -41,7 +41,7 @@ struct ExtensionRow: View {
                     .transition(.opacity)
                 }
                 if let icon = ext.icon, !icon.isEmpty {
-                    CustomImage(iconString: ext.icon!)
+                    CustomImage(extName: ext.name!, iconString: ext.icon!)
                 }
 //                    .foregroundColor(Color(NSColor.labelColor))
 //                    .transition(.opacity)

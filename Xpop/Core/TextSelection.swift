@@ -96,7 +96,20 @@ enum CopyMenuError: Error {
 /// Manages the text selection process.
 public class TextSelectionManager: ObservableObject {
     @State private var stateManager = MenuActionStateManager.shared
-    @Published public var selectedText: String? = ""
+    @Published public var selectedText: String? = "" {
+        didSet {
+            // 当 selectedText 发生变化时，写入环境变量
+            if let selectedText = selectedText {
+                setEnvironmentVariable("POPCLIP_TEXT", value: selectedText)
+                setEnvironmentVariable("XPOP_TEXT", value: selectedText)
+            } else {
+                // 如果 selectedText 为 nil，清空环境变量
+                setEnvironmentVariable("POPCLIP_TEXT", value: "")
+                setEnvironmentVariable("XPOP_TEXT", value: "")
+            }
+        }
+    }
+
     @Published var currentApp: String = ""
     @Published var selectionMethod: String = ""
 
@@ -106,6 +119,25 @@ public class TextSelectionManager: ObservableObject {
 
     public init() {
     }
+    
+    /// 设置环境变量的辅助方法
+    private func setEnvironmentVariable(_ name: String, value: String) {
+        setenv(name, value, 1) // 1 表示覆盖已存在的环境变量
+        logger.log("Environment variable %{public}@ set to: %{public}@", name, value, type: .debug)
+    }
+    
+
+    /// 读取环境变量的辅助方法
+    private func getEnvironmentVariable(_ name: String) -> String? {
+        guard let value = getenv(name) else {
+            logger.log("Environment variable %{public}@ not found", name, type: .debug)
+            return nil
+        }
+        let stringValue = String(cString: value)
+        logger.log("Environment variable %{public}@ read: %{public}@", name, stringValue, type: .debug)
+        return stringValue
+    }
+
     
     public func getSelectedText() async throws -> String {
         // 1. check accessibility permission
@@ -144,15 +176,14 @@ public class TextSelectionManager: ObservableObject {
         let enableForce: Bool = UserDefaults.standard.bool(forKey: "enableForceCopy")
         // 如果 enableForce 为 true，添加第三种方法
         if enableForce {
-            print("force copy")
             methods.append((name: "getTextFromMenubar", method: { _ in try await self.getTextFromMenubar(for: appRef) }))
         }
         await stateManager.updateStates(for: appRef)
         for method in methods {
             do {
-                let selectedText = try await method.method(focusedElement as! AXUIElement)
+                self.selectedText = try await method.method(focusedElement as! AXUIElement)
                 logger.log("SelectText Method: %{public}@", method.name, type: .info)
-                return selectedText
+                return self.selectedText ?? ""
             } catch {
                 // 如果当前方法失败，则继续尝试下一个方法
                 continue

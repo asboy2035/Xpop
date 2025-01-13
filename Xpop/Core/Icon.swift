@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct CustomImage: View {
+    let extName: String
     let iconString: String
     let size: CGFloat
     let cornerRadius: CGFloat = 8
     
     @Environment(\.colorScheme) private var colorScheme
     
-    init(iconString: String, size: CGFloat = 40) {
+    init(extName: String, iconString: String, size: CGFloat = 40) {
+        self.extName = extName
         self.iconString = iconString
         self.size = size
     }
@@ -47,6 +49,15 @@ struct CustomImage: View {
     
     private var sfSymbolName: String {
         parsedModifiers["symbol"] ?? ""
+    }
+    
+    private var isPNGImage: Bool {
+        iconString.contains(".png")
+    }
+    
+    private var pngImageName: String {
+        let components = iconString.components(separatedBy: " ")
+        return components.first { $0.contains(".png") } ?? ""
     }
     
     private var backgroundShape: some View {
@@ -84,7 +95,14 @@ struct CustomImage: View {
     }
     
     private var iconContent: some View {
-        if parsedModifiers["search"] == "true" {
+        if isPNGImage {
+            return AnyView(
+                Image(nsImage: loadImageFromFileSystem(imageName: pngImageName))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size, height: size)
+            )
+        } else if parsedModifiers["search"] == "true" {
             return AnyView(
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: size * 0.5, weight: .bold))
@@ -156,6 +174,41 @@ struct CustomImage: View {
         .offset(x: moveX, y: moveY)
         .flipped(horizontal: flipX, vertical: flipY)
     }
+    
+    private func loadImageFromFileSystem(imageName: String) -> NSImage {
+        // 获取应用程序名称 (假设为 "Xpop")
+        guard let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String else {
+            print("Failed to get application name from Bundle.")
+            return NSImage(named: "default_image") ?? NSImage()
+        }
+        
+        // 获取 Application Support 目录
+        guard let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            print("Failed to get Application Support directory.")
+            return NSImage(named: "default_image") ?? NSImage()
+        }
+        
+        // 构建完整的插件目录路径
+        let extensionsDir = appSupportURL.appendingPathComponent("\(appName)/Extensions")
+        
+        guard let pluginDirName = ExtensionManager.shared.getExtensionDir(name: extName) else {
+            print("Failed to get plugin directory name for: \(extName)")
+            return NSImage(named: "default_image") ?? NSImage()
+        }
+        
+        let pluginDir = extensionsDir.appendingPathComponent(pluginDirName)
+        let imageURL = pluginDir.appendingPathComponent(imageName)
+        
+        print("Loading image from path: \(imageURL.path)")
+        if let image = NSImage(contentsOf: imageURL) {
+            return image
+        } else {
+            print("Failed to load image from path: \(imageURL.path)")
+        }
+        
+        // 如果加载失败，返回一个默认图片
+        return NSImage(named: "default_image") ?? NSImage()
+    }
 }
 
 extension String {
@@ -179,3 +232,4 @@ extension View {
             .scaleEffect(x: horizontal ? -1 : 1, y: vertical ? -1 : 1, anchor: .center)
     }
 }
+

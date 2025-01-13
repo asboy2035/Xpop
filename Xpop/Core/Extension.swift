@@ -30,7 +30,10 @@ class Extension: Identifiable {
     var shortcutName: String?
     var serviceName: String?
     var shellScript: String?
+    var shellScriptFile: String? // 新增：表示 shell 脚本文件的路径
     var interpreter: String?
+    
+    var folderName: String? // 唯一识别符，含有随机生成字符串
     
     var _buildin_type: String?
     // MARK: - Plugin State
@@ -39,6 +42,10 @@ class Extension: Identifiable {
     var localizedName: String {
         NSLocalizedString(name!, comment: "")
     }
+    
+    let logger = Logger.shared
+    
+    let ssExecutor = ShellScriptExecutor.shared
     
     // MARK: - Initializer
     init(name: String?,
@@ -57,6 +64,7 @@ class Extension: Identifiable {
          shortcutName: String? = nil,
          serviceName: String? = nil,
          shellScript: String? = nil,
+         shellScriptFile: String? = nil, // 新增：初始化 shellScriptFile
          interpreter: String? = nil,
          isEnabled: Bool = false,
          _buildin_type: String? = nil) {
@@ -93,6 +101,7 @@ class Extension: Identifiable {
         self.shortcutName = shortcutName
         self.serviceName = serviceName
         self.shellScript = shellScript
+        self.shellScriptFile = shellScriptFile // 新增：初始化 shellScriptFile
         self.interpreter = interpreter
         
         self._buildin_type = _buildin_type
@@ -114,6 +123,9 @@ class Extension: Identifiable {
         } else if self.serviceName != nil {
             self._buildin_type = "service"
             return "service"
+        } else if self.shellScript != nil || self.shellScriptFile != nil {
+            self._buildin_type = "shellScript" // 新增：shellScript 类型
+            return "shellScript"
         } else {
             return "unknown"
         }
@@ -131,6 +143,8 @@ class Extension: Identifiable {
             runShortcut()
         case "service":
             runService()
+        case "shellScript": // 新增：执行 shellScript
+            runShellScript()
         default:
             print("Unknown action type")
         }
@@ -189,6 +203,19 @@ class Extension: Identifiable {
         // 这里可以调用系统 API 来运行服务
     }
     
+    // MARK: - 运行 Shell 脚本
+    private func runShellScript() {
+        Task {
+            do {
+                let extName = ExtensionManager.shared.getExtensionDir(name: name!)
+                let output = try await ssExecutor.runShellScript(script: shellScript, scriptFile: shellScriptFile, extensionName: extName)
+                logger.log("Shell script output: %{public}@", output, type: .info)
+            } catch {
+                logger.log("Error running shell script: %{public}@", error.localizedDescription, type: .error)
+            }
+        }
+    }
+    
     // MARK: - 将插件信息转换为 YAML 字符串
     func toYAML() throws -> String {
         var yamlDict = [String: Any]()
@@ -241,9 +268,11 @@ class Extension: Identifiable {
         if let serviceName = self.serviceName {
             yamlDict["service name"] = serviceName
         }
-
         if let shellScript = self.shellScript {
             yamlDict["shell script"] = shellScript
+        }
+        if let shellScriptFile = self.shellScriptFile { // 新增：添加 shellScriptFile 到 YAML
+            yamlDict["shell script file"] = shellScriptFile
         }
         if let interpreter = self.interpreter {
             yamlDict["interpreter"] = interpreter
@@ -525,6 +554,15 @@ class ExtensionManager: ObservableObject {
         return extensions[name]!
     }
     
+    func getExtensionDir(name: String) -> String? {
+        for (key, extensionValue) in extensions {
+            if extensionValue.name == name {
+                return key
+            }
+        }
+        return nil // 如果没找到，返回 nil
+    }
+    
     // MARK: - 获取 Extensions 目录
     private func getExtensionsDirectory() -> URL {
         let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -723,4 +761,102 @@ class BuiltInAction {
             }
         }
     ]
+}
+
+class ShellScriptExecutor {
+    static let shared = ShellScriptExecutor() // 单例实例
+    private let fileManager = FileManager.default
+    
+    private init() {} // 防止外部初始化
+    
+    // MARK: - 运行 Shell 脚本
+    func runShellScript(script: String?, scriptFile: String?, extensionName: String?) async throws -> String {
+        // 获取软件名称
+        guard let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String else {
+            throw ShellScriptError.appNameNotFound
+        }
+        
+        // 检查插件名称
+        guard let extensionName = extensionName else {
+            throw ShellScriptError.extensionNameMissing
+        }
+        
+        // 获取 Application Support 目录
+        let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let extensionsDirectory = appSupportURL
+            .appendingPathComponent(appName)
+            .appendingPathComponent("Extensions")
+            .appendingPathComponent(extensionName)
+        
+        // 切换到插件目录
+        let currentDirectory = fileManager.currentDirectoryPath
+        defer {
+            fileManager.changeCurrentDirectoryPath(currentDirectory)
+        }
+        
+        let directoryChangeSuccess = fileManager.changeCurrentDirectoryPath(extensionsDirectory.path)
+        if !directoryChangeSuccess {
+            throw ShellScriptError.directoryChangeFailed(path: extensionsDirectory.path, error: NSError(domain: "FileManagerError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to change directory"]))
+        }
+        
+        // 读取脚本内容
+        let scriptContent: String
+        if let script = script {
+            scriptContent = script
+        } else if let scriptFile = scriptFile {
+            let scriptURL = extensionsDirectory.appendingPathComponent(scriptFile)
+            do {
+                scriptContent = try String(contentsOf: scriptURL, encoding: .utf8)
+            } catch {
+                throw ShellScriptError.scriptFileReadFailed(path: scriptURL.path, error: error)
+            }
+        } else {
+            throw ShellScriptError.scriptNotFound
+        }
+        
+        // 执行脚本
+        return try await executeShellScript(script: scriptContent)
+    }
+    
+    
+    // MARK: - 执行 Shell 脚本
+    private func executeShellScript(script: String) async throws -> String {
+        let process = Process()
+        process.launchPath = "/bin/zsh"
+        process.arguments = ["-c", script]
+        
+        // 设置输出管道
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = outputPipe
+        
+        // 启动进程
+        process.launch()
+        
+        // 等待进程结束
+        process.waitUntilExit()
+        
+        // 读取输出
+        let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: outputData, encoding: .utf8) else {
+            throw ShellScriptError.outputDecodingFailed
+        }
+        
+        // 检查执行结果
+        if process.terminationStatus != 0 {
+            throw ShellScriptError.scriptExecutionFailed(exitCode: process.terminationStatus, output: output)
+        }
+        
+        return output
+    }
+}
+
+enum ShellScriptError: Error {
+    case appNameNotFound
+    case extensionNameMissing
+    case directoryChangeFailed(path: String, error: Error)
+    case scriptFileReadFailed(path: String, error: Error)
+    case scriptNotFound
+    case outputDecodingFailed
+    case scriptExecutionFailed(exitCode: Int32, output: String)
 }
