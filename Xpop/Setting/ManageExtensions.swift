@@ -19,7 +19,7 @@ struct ExtensionRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                if isEditing {
+                if isEditing && ext._buildin_type != "_buildin" && ext.name != "Search"{
                     Button(action: {
                         onDelete()
                     }) {

@@ -102,6 +102,7 @@ struct CustomImage: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: size - 5, height: size - 5)
+                    .aspectRatio(contentMode: .fit)
                     .foregroundStyle(.primary) // 使用系统主色
             )
         } else if parsedModifiers["search"] == "true" {

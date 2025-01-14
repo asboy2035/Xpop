@@ -101,6 +101,8 @@ class Extension: Identifiable {
         self.shortcutName = shortcutName
         self.serviceName = serviceName
         
+        self._buildin_type = _buildin_type
+        
         // 处理脚本字段
         if let action = action {
             // 如果 action 存在，优先从 action 中提取脚本字段
@@ -133,6 +135,7 @@ class Extension: Identifiable {
             self._buildin_type = "shellScript" // 新增：shellScript 类型
             return "shellScript"
         } else {
+            self._buildin_type = "unknown"
             return "unknown"
         }
     }
@@ -336,14 +339,15 @@ class ExtensionManager: ObservableObject {
     
     init() {
         self.loadExtensions()
-        self.loadExtensionList()
         self.loadBuildinExtensions()
+        self.loadExtensionList()
         // 保存到 UserDefaults
         saveExtensionList()
         
     }
     
     func loadBuildinExtensions() {
+//        UserDefaults.standard.removeObject(forKey: "extensionList")
         // 搜索插件
         let searchExtension = Extension(
             name: "Search",
@@ -475,7 +479,6 @@ class ExtensionManager: ObservableObject {
     
     // MARK: - Load Extension List
     func loadExtensionList() {
-//        UserDefaults.standard.removeObject(forKey: "extensionList")
         if let savedData = UserDefaults.standard.data(forKey: extensionListKey) {
             // 如果 UserDefaults 中有保存的数据，则解码并加载
             let decoder = JSONDecoder()
@@ -648,7 +651,7 @@ class ExtensionManager: ObservableObject {
     }
     
     // MARK: - 安装插件
-    func install(ext: Extension) throws {
+    func install(ext: Extension) throws -> String {
         let extensionsDirectory = getExtensionsDirectory()
         
         // 如果目录不存在，则创建
@@ -689,6 +692,62 @@ class ExtensionManager: ObservableObject {
         // 重新加载插件
         loadExtensions()
         loadExtensionList()
+        
+        return folderName // 返回文件的目录
+    }
+    
+    func install(url: URL) throws {
+        let extensionsDirectory = getExtensionsDirectory()
+        // 如果目录不存在，则创建
+        if !FileManager.default.fileExists(atPath: extensionsDirectory.path) {
+            try FileManager.default.createDirectory(at: extensionsDirectory, withIntermediateDirectories: true, attributes: nil)
+        }
+        let fileName = url.lastPathComponent // 获取完整文件名（包括扩展名）
+        let name = url.deletingPathExtension().lastPathComponent // 去掉扩展名
+        let pluginDirectory = extensionsDirectory.appendingPathComponent(fileName)
+
+        // 检查是否存在同名插件
+        let existingPluginDirectories = try FileManager.default.contentsOfDirectory(atPath: extensionsDirectory.path)
+        for existingDirectory in existingPluginDirectories {
+            if existingDirectory.hasPrefix(name) && existingDirectory.hasSuffix(".xpopext") {
+                // 删除已存在的同名插件
+                removeExtension(foldName: existingDirectory)
+                let existingPluginDirectory = extensionsDirectory.appendingPathComponent(existingDirectory)
+                try FileManager.default.removeItem(at: existingPluginDirectory)
+                logger.log("Removed existing plugin at: %{public}@", existingPluginDirectory.path, type: .info)
+            }
+        }
+        do {
+            let fileManager = FileManager.default
+            let destinationURL = extensionsDirectory.appendingPathComponent(url.lastPathComponent) // 构建完整的目标路径
+            
+            if fileManager.fileExists(atPath: destinationURL.path) {
+                try fileManager.removeItem(at: destinationURL)
+            }
+            
+            try fileManager.copyItem(at: url, to: destinationURL)
+        } catch {
+            print(url)
+            print(extensionsDirectory)
+            print(error.localizedDescription)
+        }
+
+        let configFilePath = pluginDirectory.appendingPathComponent("Config.yaml")
+        let yamlString = try String(contentsOf: configFilePath, encoding: .utf8)
+        let extensionInstance = try ExtensionManager.fromYAML(yamlString)
+        extensions[fileName] = extensionInstance
+        extensionList.append(ExtensionItem(name: fileName, isEnabled: extensionInstance.isEnabled))
+        
+        // 重新加载插件
+        loadExtensions()
+        loadExtensionList()
+        saveExtensionList()
+    }
+    
+    func removeExtension(foldName: String) {
+        extensions.removeValue(forKey: foldName)
+        extensionList = extensionList.filter{ $0.name != foldName }
+        saveExtensionList()
     }
     
     // MARK: - 卸载插件

@@ -45,6 +45,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         setupEventMonitoring()
     }
 
+    func application(_ sender: NSApplication, open urls: [URL]) {
+        for url in urls {
+            do {
+                try ExtensionManager.shared.install(url: url)
+                logger.log("Install Extension %{public}@ success.", url.lastPathComponent, type: .info)
+            } catch {
+                logger.log("Install Extension %{public}@ Failed.", url.deletingPathExtension().lastPathComponent , type: .error)
+            }
+        }
+    }
+    
     // MARK: - Setup Methods
 
     private func setupMainWindow() {
