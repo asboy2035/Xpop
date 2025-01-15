@@ -43,14 +43,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         // 4. Add global mouse event monitors
         setupEventMonitoring()
+        
+        // DEBUG ONLY! SIMULATE TO INSTALL EXTENSION
+//        let urls = [URL(fileURLWithPath: "/Users/dongqishen/Downloads/openai-translator.xpopext")]
+//        application(NSApplication.shared, open: urls) // should delay for some seconds.
     }
 
     func application(_ sender: NSApplication, open urls: [URL]) {
         for url in urls {
             do {
                 try ExtensionManager.shared.install(url: url)
+                statusBarManager.showSuccessMessage()
                 logger.log("Install Extension %{public}@ success.", url.lastPathComponent, type: .info)
             } catch {
+                statusBarManager.showSuccessMessage()
                 logger.log("Install Extension %{public}@ Failed.", url.deletingPathExtension().lastPathComponent , type: .error)
             }
         }

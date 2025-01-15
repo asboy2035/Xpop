@@ -6,12 +6,16 @@
 //
 
 import AppKit
+import SwiftUI
 
 class StatusBarManager: NSObject {
     private var statusItem: NSStatusItem?
     private var enableSwitch: NSSwitch?
     private var enableMenuItem: NSMenuItem?
     private var menu: NSMenu?
+    
+    private var infoPopover: NSPopover?
+    private var timer: Timer?
     
     private var eventMonitor: InputEventMonitor?
     
@@ -102,7 +106,6 @@ class StatusBarManager: NSObject {
         enableMenuItem = createEnableMenuItem()
         menu?.addItem(enableMenuItem!)
         menu?.addItem(NSMenuItem.separator())
-        
     }
 
     @objc private func updateMenuAppearance() {
@@ -150,5 +153,39 @@ class StatusBarManager: NSObject {
             isEnabled = false
             logger.log("Xpop is OFF.", type: .debug)
         }
+    }
+    
+    
+    func showSuccessMessage() {
+        showMessage(imageName: "checkmark.circle.fill", color: .green, message: "插件安装成功")
+    }
+    
+    func showFailureMessage() {
+        showMessage(imageName: "xmark.circle.fill", color: .red, message: "插件安装失败")
+    }
+    
+    private func showMessage(imageName: String, color: Color, message: String) {
+        guard let statusItem = statusItem, let button = statusItem.button else { return }
+        
+        let popover = NSPopover()
+        popover.contentSize = NSSize(width: 200, height: 60)
+        popover.behavior = .transient
+        
+        let hostingController = NSHostingController(rootView: PopoverContentView(imageName: imageName, color: color, message: message))
+        popover.contentViewController = hostingController
+
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        self.infoPopover = popover
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { _ in
+            self.hidePopover()
+        }
+    }
+    
+    private func hidePopover() {
+        infoPopover?.close()
+        infoPopover = nil
+        timer?.invalidate()
+        timer = nil
     }
 }
