@@ -1,0 +1,10 @@
+name: CI - Check Xcode Versions
+
+on: [push]
+
+jobs:
+  check-xcode:
+    runs-on: macos-latest
+    steps:
+      - name: List Xcode versions
+        run: ls -l /Applications | grep Xcode
