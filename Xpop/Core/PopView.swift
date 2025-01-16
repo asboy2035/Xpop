@@ -44,26 +44,28 @@ struct ExtensionButton: View {
             }
             appDelegate.hideWindow_new() // 点击按钮后隐藏窗口
         }) {
-            // 如果有 icon，显示 CustomImage；否则显示 Text
-            if let icon = ext.icon, !icon.isEmpty {
-                CustomImage(extName: ext.name!, iconString: icon, size: 28)
-                    .foregroundColor(isHovered ? Color.white : Color.primary)
-
-            } else if let name = ext.name, !name.isEmpty {
-                Text(name)
-                    .foregroundColor(isHovered ? Color.white : Color.primary)
-                    .lineLimit(1) // 限制为单行
-                    .fixedSize(horizontal: true, vertical: false) // 确保文本完整显示
-            } else {
-                // 如果 icon 和 name 都为空，显示一个占位符（可选）
-                Image(systemName: "questionmark.circle") // 使用系统图标作为占位符
-                    .foregroundColor(isHovered ? Color.white : Color.primary)
+            ZStack {
+                // 如果有 icon，显示 CustomImage；否则显示 Text
+                if let icon = ext.icon, !icon.isEmpty {
+                    CustomImage(extName: ext.name!, iconString: icon, size: 28)
+                        .foregroundColor(isHovered ? Color.white : Color.primary)
+                } else if let name = ext.name, !name.isEmpty {
+                    Text(name)
+                        .foregroundColor(isHovered ? Color.white : Color.primary)
+                        .lineLimit(1) // 限制为单行
+                        .fixedSize(horizontal: true, vertical: false) // 确保文本完整显示
+                } else {
+                    // 如果 icon 和 name 都为空，显示一个占位符（可选）
+                    Image(systemName: "questionmark.circle") // 使用系统图标作为占位符
+                        .foregroundColor(isHovered ? Color.white : Color.primary)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity) // 填充整个按钮区域
+            .contentShape(Rectangle()) // 确保整个区域都可点击
         }
         .buttonStyle(PlainButtonStyle())
         .frame(minWidth: 40, maxWidth: .infinity, maxHeight: .infinity) // 设置灵活的宽度和高度
         .background(isHovered ? Color.blue.opacity(0.8) : Color.clear)
-        .contentShape(Rectangle()) // 确保整个区域可点击
         .onHover { hovering in
             isHovered = hovering
         }
