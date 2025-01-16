@@ -72,7 +72,22 @@ class StatusBarManager: NSObject {
         if let button = statusItem?.button {
             if let appIcon = NSImage(named: "AppIcon") {
                 appIcon.size = NSSize(width: 24, height: 24)
-                button.image = appIcon
+
+                // 创建一个新的 NSImage，用于绘制修改后的图像
+                let tintedImage = NSImage(size: appIcon.size)
+                tintedImage.lockFocus() // 开始绘制
+
+                // 将原始图像绘制到新图像中
+                appIcon.draw(at: .zero, from: NSRect(origin: .zero, size: appIcon.size), operation: .sourceOver, fraction: 1.0)
+
+                // 设置绘图上下文的颜色
+                NSColor.white.set()
+                NSRect(origin: .zero, size: appIcon.size).fill(using: .sourceAtop) // 使用混合模式覆盖颜色
+
+                tintedImage.unlockFocus() // 完成绘制
+
+                // 设置按钮的图像
+                button.image = tintedImage
                 button.alphaValue = isEnabled ? 1.0 : 0.4
             }
 
