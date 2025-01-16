@@ -5,14 +5,15 @@
 //  Created by Dongqi Shen on 2025/1/8.
 //
 
+import AppKit
 import ApplicationServices
 import Cocoa
 import Combine
-import SwiftUI
 import Foundation
-import AppKit
+import SwiftUI
 
 // MARK: - Error Handling
+
 /// Enum for text selection errors with user-friendly descriptions.
 enum TextSelectionError: Error {
     // Accessibility & 权限问题
@@ -40,7 +41,7 @@ enum TextSelectionError: Error {
 
     // 通用错误
     case genericError(message: String) // 通用的未知错误
-    
+
     /// 错误描述方法
     func description() -> String {
         switch self {
@@ -54,27 +55,27 @@ enum TextSelectionError: Error {
             return "No text found in the selected area."
         case .emptyText:
             return "Selected text is empty."
-        case .unsupportedType(let type):
+        case let .unsupportedType(type):
             return "Unsupported value type encountered: \(type)."
-        case .failedToRetrieveAttribute(let attribute):
+        case let .failedToRetrieveAttribute(attribute):
             return "Failed to retrieve attribute: \(attribute)."
-        case .scriptSyntaxError(let message):
+        case let .scriptSyntaxError(message):
             return "AppleScript syntax error: \(message)."
-        case .runtimeError(let code, let message):
+        case let .runtimeError(code, message):
             return "AppleScript runtime error (\(code)): \(message)."
         case .unknownAppleScriptError:
             return "An unknown AppleScript error occurred."
-        case .unsupportedCommand(let command):
+        case let .unsupportedCommand(command):
             return "AppleScript unsupported command: \(command)."
         case .AXSelectedTextMarkerRange:
             return "Unable to get AXSelectedTextMarkerRange."
         case .AXStringForTextMarkerRange:
             return "Unable to get AXStringForTextMarkerRange."
-        case .invalidMarkerRangeType(let type):
+        case let .invalidMarkerRangeType(type):
             return "Invalid AXSelectedTextMarkerRange type: \(type)."
         case .unsupportedMarkerRange:
             return "AXStringForTextMarkerRange returned an unsupported range."
-        case .genericError(let message):
+        case let .genericError(message):
             return "An error occurred: \(message)"
         }
     }
@@ -89,7 +90,6 @@ enum CopyMenuError: Error {
     case actionFailed
     case clipboardNotUpdated
 }
-
 
 // MARK: - Text Selection Manager
 
@@ -113,19 +113,17 @@ public class TextSelectionManager: ObservableObject {
     @Published var currentApp: String = ""
     @Published var selectionMethod: String = ""
 
-    private var lastCheckTime: Date = Date()
+    private var lastCheckTime: Date = .init()
     public var lastSelectedText: String?
     private let logger = Logger.shared
 
-    public init() {
-    }
-    
+    public init() {}
+
     /// 设置环境变量的辅助方法
     private func setEnvironmentVariable(_ name: String, value: String) {
         setenv(name, value, 1) // 1 表示覆盖已存在的环境变量
         logger.log("Environment variable %{public}@ set to: %{public}@", name, value, type: .debug)
     }
-    
 
     /// 读取环境变量的辅助方法
     private func getEnvironmentVariable(_ name: String) -> String? {
@@ -138,7 +136,6 @@ public class TextSelectionManager: ObservableObject {
         return stringValue
     }
 
-    
     public func getSelectedText() async throws -> String {
         // 1. check accessibility permission
         guard AXIsProcessTrusted() else {
@@ -153,11 +150,13 @@ public class TextSelectionManager: ObservableObject {
         // 4. get focused element
         var focusedElement: AnyObject?
         guard AXUIElementCopyAttributeValue(
-            appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
-              let focusedElement = focusedElement else {
+            appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement
+        ) == .success,
+            let focusedElement = focusedElement
+        else {
             throw TextSelectionError.noFocusedElement
         }
-        
+
         // Extract properties of `activeApp`
         let appName = activeApp.localizedName ?? "Unknown App"
         // Update `currentApp` on the main thread
@@ -170,30 +169,33 @@ public class TextSelectionManager: ObservableObject {
         typealias TextFetchMethod = (name: String, method: (AXUIElement) async throws -> String)
         var methods: [TextFetchMethod] = [
             (name: "getTextFromSelectedAttribute", method: getTextFromSelectedAttribute),
-            (name: "getTextFromTextMarker", method: getTextFromTextMarker)
+            (name: "getTextFromTextMarker", method: getTextFromTextMarker),
         ]
 
         let enableForce: Bool = UserDefaults.standard.bool(forKey: "enableForceCopy")
         // 如果 enableForce 为 true，添加第三种方法
         if enableForce {
-            methods.append((name: "getTextFromMenubar", method: { _ in try await self.getTextFromMenubar(for: appRef) }))
+            methods.append((
+                name: "getTextFromMenubar",
+                method: { _ in try await self.getTextFromMenubar(for: appRef) }
+            ))
         }
         await stateManager.updateStates(for: appRef)
         for method in methods {
             do {
-                self.selectedText = try await method.method(focusedElement as! AXUIElement)
+                selectedText = try await method.method(focusedElement as! AXUIElement)
                 logger.log("SelectText Method: %{public}@", method.name, type: .info)
-                return self.selectedText ?? ""
+                return selectedText ?? ""
             } catch {
                 // 如果当前方法失败，则继续尝试下一个方法
                 continue
             }
         }
-        
+
         // 如果所有方法都失败，抛出特定错误
         throw TextSelectionError.noTextFound
     }
-    
+
     private func getTextFromMenubar(for element: AXUIElement) async throws -> String {
         let finder = MenuActionFinder()
         let clipboardManager = ClipboardManager()
@@ -201,17 +203,17 @@ public class TextSelectionManager: ObservableObject {
         let copyItem = try await finder.findMenuItem(in: element, action: "Copy")
         // 创建点击复制菜单项的闭包
         let action = finder.createClickMenuItemAction(for: copyItem, action: "Copy")
-        
+
         // 直接调用 performClipboardAction，将错误完全向上传递
         guard let result = try await clipboardManager.performClipboardAction(action: action, delay: 0.05) else {
             throw TextSelectionError.genericError(message: "Failed to retrieve text from clipboard.")
         }
         return result
     }
-    
+
     private func getTextFromSelectedAttribute(for element: AXUIElement) async throws -> String {
         var value: AnyObject?
-        
+
         // 尝试获取 `kAXSelectedTextAttribute`
         if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success {
             // 检查是否为 String 类型
@@ -233,18 +235,18 @@ public class TextSelectionManager: ObservableObject {
     private func getTextFromTextMarker(for element: AXUIElement) async throws -> String {
         var markerValue: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &markerValue)
-        
+
         // 确保 markerRange 存在
         guard result == .success, let markerRange = markerValue else {
             throw TextSelectionError.AXSelectedTextMarkerRange
         }
-        
+
         var selectedText: AnyObject?
-        
+
         // 获取 `AXStringForTextMarkerRange` 的值
         if AXUIElementCopyParameterizedAttributeValue(
-            element, "AXStringForTextMarkerRange" as CFString, markerRange, &selectedText) == .success {
-            
+            element, "AXStringForTextMarkerRange" as CFString, markerRange, &selectedText
+        ) == .success {
             // 检查是否为 String 类型
             if let text = selectedText as? String {
                 return text
@@ -284,7 +286,7 @@ public class TextSelectionManager: ObservableObject {
             }
         }
     }
-    
+
     private func getSafariSelectedText() -> Result<String, TextSelectionError> {
         let script = ApplicationAppleScripts.getSelectedTextFromSafari
         return getTextFromAppleScript(script: script)
@@ -314,7 +316,10 @@ class AppleScriptRunner {
             guard let result = appleScript?.executeAndReturnError(&errorDict) else {
                 if let errorInfo = errorDict,
                    let errorCode = errorInfo["NSAppleScriptErrorNumber"] as? Int {
-                    let error = self.mapAppleScriptError(code: errorCode, description: errorInfo["NSAppleScriptErrorMessage"] as? String)
+                    let error = self.mapAppleScriptError(
+                        code: errorCode,
+                        description: errorInfo["NSAppleScriptErrorMessage"] as? String
+                    )
                     DispatchQueue.main.async {
                         completion(.failure(error))
                     }
@@ -364,10 +369,10 @@ class AppleScriptRunner {
     }
 }
 
-class ApplicationAppleScripts {
+enum ApplicationAppleScripts {
     /// 获取 Safari 中选中文本的脚本
     static var getSelectedTextFromSafari: String {
-        return """
+        """
         tell application "Safari"
             -- Get the current tab's selected text using JavaScript
             set selectedText to do JavaScript "window.getSelection().toString();" in current tab of front window
@@ -377,7 +382,7 @@ class ApplicationAppleScripts {
 
     /// 获取 Chrome 中选中文本的脚本
     static var getSelectedTextFromChrome: String {
-        return """
+        """
         tell application "Google Chrome"
             execute front window's active tab javascript "window.getSelection().toString();"
         end tell
@@ -386,7 +391,7 @@ class ApplicationAppleScripts {
 
     /// 获取当前时间的通用脚本（示例）
     static var getCurrentTime: String {
-        return """
+        """
         set current_time to (current date) as string
         return current_time
         """
@@ -394,7 +399,7 @@ class ApplicationAppleScripts {
 
     /// 设置剪贴板内容的脚本
     static func setClipboardText(_ text: String) -> String {
-        return """
+        """
         set the clipboard to "\(text)"
         """
     }
@@ -404,7 +409,7 @@ class ApplicationAppleScripts {
     /// - Parameter javascript: JavaScript 字符串
     /// - Returns: AppleScript 字符串
     static func getSelectedTextScript(forAppWithId appId: String, javascript: String) -> String {
-        return """
+        """
         tell application id "\(appId)"
             tell front window
                 set selection_text to do JavaScript "\(javascript)" in current tab
@@ -440,7 +445,8 @@ class ClipboardManager {
                 if let data = item.data(forType: type) {
                     backupItem.setData(data, forType: type)
                 } else {
-                    throw TextSelectionError.failedToRetrieveAttribute("Failed to copy data for type: \(type.rawValue).")
+                    throw TextSelectionError
+                        .failedToRetrieveAttribute("Failed to copy data for type: \(type.rawValue).")
                 }
             }
             backupItems.append(backupItem)
@@ -468,7 +474,7 @@ class ClipboardManager {
     ///   - action: 回调函数，用于模拟剪贴板操作（如 Command + C）
     ///   - delay: 延迟恢复时间，单位为秒
     /// - Returns: 剪贴板上的字符串内容
-    func performClipboardAction(action: ()async throws -> String?, delay: TimeInterval = 0.1) async throws -> String? {
+    func performClipboardAction(action: () async throws -> String?, delay: TimeInterval = 0.1) async throws -> String? {
         do {
             try saveClipboardContents() // 保存原始内容
             let result = try await action() // 执行操作，例如模拟 Command + C
@@ -487,37 +493,37 @@ class ClipboardManager {
 
 class MenuActionStateManager: ObservableObject {
     static let shared = MenuActionStateManager()
-    
+
     @Published var canCopy: Bool = false
     @Published var canCut: Bool = false
     @Published var canPaste: Bool = false
-    
+
     private init() {}
 
     @MainActor
     func updateStates(for element: AXUIElement) async {
         let menuFinder = MenuActionFinder()
-        
+
         // 检查 Copy 是否可用
         do {
-            let _ = try await menuFinder.findMenuItem(in: element, action: "Copy")
+            _ = try await menuFinder.findMenuItem(in: element, action: "Copy")
             canCopy = true
         } catch {
             print(error.localizedDescription)
             canCopy = false
         }
-        
+
         // 检查 Cut 是否可用
         do {
-            let _ = try await menuFinder.findMenuItem(in: element, action: "Cut")
+            _ = try await menuFinder.findMenuItem(in: element, action: "Cut")
             canCut = true
         } catch {
             canCut = false
         }
-        
+
         // 检查 Paste 是否可用
         do {
-            let _ = try await menuFinder.findMenuItem(in: element, action: "Paste")
+            _ = try await menuFinder.findMenuItem(in: element, action: "Paste")
             canPaste = true
         } catch {
             canPaste = false
@@ -528,41 +534,41 @@ class MenuActionStateManager: ObservableObject {
 class MenuActionFinder {
     private let actionTitles: [String: Set<String>] = [
         "Copy": [
-            "Copy",  // English
-            "拷贝", "复制",  // Simplified Chinese
-            "拷貝", "複製",  // Traditional Chinese
-            "コピー",  // Japanese
-            "복사",  // Korean
-            "Copier",  // French
-            "Copiar",  // Spanish, Portuguese
-            "Copia",  // Italian
-            "Kopieren",  // German
-            "Копировать",  // Russian
+            "Copy", // English
+            "拷贝", "复制", // Simplified Chinese
+            "拷貝", "複製", // Traditional Chinese
+            "コピー", // Japanese
+            "복사", // Korean
+            "Copier", // French
+            "Copiar", // Spanish, Portuguese
+            "Copia", // Italian
+            "Kopieren", // German
+            "Копировать", // Russian
         ],
         "Cut": [
-            "Cut",  // English
-            "剪切",  // Simplified Chinese
-            "剪下",  // Traditional Chinese
-            "カット",  // Japanese
-            "자르기",  // Korean
-            "Couper",  // French
-            "Cortar",  // Spanish, Portuguese
-            "Taglia",  // Italian
-            "Ausschneiden",  // German
-            "Вырезать",  // Russian
+            "Cut", // English
+            "剪切", // Simplified Chinese
+            "剪下", // Traditional Chinese
+            "カット", // Japanese
+            "자르기", // Korean
+            "Couper", // French
+            "Cortar", // Spanish, Portuguese
+            "Taglia", // Italian
+            "Ausschneiden", // German
+            "Вырезать", // Russian
         ],
         "Paste": [
-            "Paste",  // English
-            "粘贴",  // Simplified Chinese
-            "貼上",  // Traditional Chinese
-            "ペースト",  // Japanese
-            "붙여넣기",  // Korean
-            "Coller",  // French
-            "Pegar",  // Spanish, Portuguese
-            "Incolla",  // Italian
-            "Einfügen",  // German
-            "Вставить",  // Russian
-        ]
+            "Paste", // English
+            "粘贴", // Simplified Chinese
+            "貼上", // Traditional Chinese
+            "ペースト", // Japanese
+            "붙여넣기", // Korean
+            "Coller", // French
+            "Pegar", // Spanish, Portuguese
+            "Incolla", // Italian
+            "Einfügen", // German
+            "Вставить", // Russian
+        ],
     ]
 
     /// 查找指定 AXUIElement 中的可用菜单项（Copy, Cut, Paste）
@@ -574,18 +580,17 @@ class MenuActionFinder {
             throw MenuActionError.menuItemNotFound
         }
         if !isMenuItemEnabled(menuItem) {
-            
             throw MenuActionError.menuItemNotEnabled
         }
         return menuItem
     }
-    
+
     /// 创建一个闭包，用于点击指定的菜单项并返回剪贴板内容（仅适用于 Copy 和 Cut）
     func createClickMenuItemAction(for menuItem: AXUIElement, action: String) -> () async throws -> String? {
-        return {
+        {
             let pasteboard = NSPasteboard.general
             let initialChangeCount = pasteboard.changeCount
-            
+
             // 执行点击动作
             let result = AXUIElementPerformAction(menuItem, kAXPressAction as CFString)
             if result != .success {
@@ -595,7 +600,7 @@ class MenuActionFinder {
             try await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
             _ = pasteboard.changeCount
-            
+
             // 检查剪贴板是否更新（仅适用于 Copy 和 Cut）
             if action == "Copy" || action == "Cut" {
                 if pasteboard.changeCount != initialChangeCount {
@@ -623,7 +628,8 @@ class MenuActionFinder {
     private func searchMenuItemRecursively(_ element: AXUIElement, titles: Set<String>) async throws -> AXUIElement? {
         var children: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
-              let childArray = children as? [AXUIElement] else {
+              let childArray = children as? [AXUIElement]
+        else {
             return nil // 不抛出错误，因为可能没有子元素
         }
 
@@ -631,7 +637,6 @@ class MenuActionFinder {
             var title: CFTypeRef?
             if AXUIElementCopyAttributeValue(child, kAXTitleAttribute as CFString, &title) == .success,
                let titleString = title as? String, titles.contains(titleString) {
-                
                 // 找到匹配的菜单项，先尝试返回，如果返回为空，则继续在子菜单中查找
                 if let found = try await searchMenuItemRecursively(child, titles: titles) {
                     return found
@@ -639,7 +644,7 @@ class MenuActionFinder {
                     return child
                 }
             }
-            
+
             // 如果当前子元素不是目标菜单项，则继续递归查找
             if let found = try await searchMenuItemRecursively(child, titles: titles) {
                 return found
@@ -668,4 +673,3 @@ enum MenuActionError: Error {
     case actionFailed
     case clipboardNotUpdated
 }
-

@@ -12,15 +12,15 @@ struct CustomImage: View {
     let iconString: String
     let size: CGFloat
     let cornerRadius: CGFloat = 8
-    
+
     @Environment(\.colorScheme) private var colorScheme
-    
+
     init(extName: String, iconString: String, size: CGFloat = 30) {
         self.extName = extName
         self.iconString = iconString
         self.size = size
     }
-    
+
     private var parsedModifiers: [String: String] {
         let components = iconString.components(separatedBy: " ")
         var modifiers: [String: String] = [:]
@@ -36,30 +36,30 @@ struct CustomImage: View {
         }
         return modifiers
     }
-    
+
     private var iconText: String {
         let components = iconString.components(separatedBy: " ")
         let textComponents = components.filter { !$0.hasPrefix("symbol:") && !$0.contains("=") }
         return String(textComponents.last?.prefix(8) ?? "")
     }
-    
+
     private var isSFSymbol: Bool {
         parsedModifiers["symbol"] != nil
     }
-    
+
     private var sfSymbolName: String {
         parsedModifiers["symbol"] ?? ""
     }
-    
+
     private var isPNGImage: Bool {
         iconString.contains(".png")
     }
-    
+
     private var pngImageName: String {
         let components = iconString.components(separatedBy: " ")
         return components.first { $0.contains(".png") } ?? ""
     }
-    
+
     private var backgroundShape: some View {
         if parsedModifiers["circle"] == "true" {
             if parsedModifiers["filled"] == "true" {
@@ -77,23 +77,23 @@ struct CustomImage: View {
             AnyView(RoundedRectangle(cornerRadius: cornerRadius).fill(Color.clear))
         }
     }
-    
+
     private var filledBackgroundColor: Color {
         colorScheme == .light ? .white : .black
     }
-    
+
     private var filledTextColor: Color {
         colorScheme == .light ? .black : .white
     }
-    
+
     private var strikeLineColor: Color {
         colorScheme == .light ? (parsedModifiers["filled"] == "true" ? filledTextColor : Color.primary) : .white
     }
-    
+
     private var strikeBorderColor: Color {
         colorScheme == .light ? .white : .black
     }
-    
+
     private var iconContent: some View {
         if isPNGImage {
             return AnyView(
@@ -118,12 +118,13 @@ struct CustomImage: View {
         } else {
             return AnyView(
                 Text(iconText)
-                    .font(parsedModifiers["monospaced"] == "true" ? .system(size: size * 0.5, weight: .bold, design: .monospaced) : .system(size: size * 0.5, weight: .bold, design: .default))
+                    .font(parsedModifiers["monospaced"] == "true" ?
+                        .system(size: size * 0.5, weight: .bold, design: .monospaced) :
+                        .system(size: size * 0.5, weight: .bold, design: .default))
             )
         }
     }
 
-    
     private var strikeLine: some View {
         if parsedModifiers["strike"] == "true" {
             AnyView(
@@ -139,31 +140,31 @@ struct CustomImage: View {
             AnyView(EmptyView())
         }
     }
-    
+
     private var scale: CGFloat {
         CGFloat((parsedModifiers["scale"] ?? "100").toDouble() ?? 100) / 100
     }
-    
+
     private var rotation: Double {
         parsedModifiers["rotate"]?.toDouble() ?? 0
     }
-    
+
     private var moveX: CGFloat {
         CGFloat(parsedModifiers["move-x"]?.toDouble() ?? 0)
     }
-    
+
     private var moveY: CGFloat {
         CGFloat(parsedModifiers["move-y"]?.toDouble() ?? 0)
     }
-    
+
     private var flipX: Bool {
         parsedModifiers["flip-x"] == "true"
     }
-    
+
     private var flipY: Bool {
         parsedModifiers["flip-y"] == "true"
     }
-    
+
     var body: some View {
         ZStack {
             backgroundShape
@@ -177,38 +178,40 @@ struct CustomImage: View {
         .offset(x: moveX, y: moveY)
         .flipped(horizontal: flipX, vertical: flipY)
     }
-    
+
     private func loadImageFromFileSystem(imageName: String) -> NSImage {
         // 获取应用程序名称 (假设为 "Xpop")
         guard let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String else {
             print("Failed to get application name from Bundle.")
             return NSImage(named: "default_image") ?? NSImage()
         }
-        
+
         // 获取 Application Support 目录
-        guard let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        guard let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            .first
+        else {
             print("Failed to get Application Support directory.")
             return NSImage(named: "default_image") ?? NSImage()
         }
-        
+
         // 构建完整的插件目录路径
         let extensionsDir = appSupportURL.appendingPathComponent("\(appName)/Extensions")
-        
+
         guard let pluginDirName = ExtensionManager.shared.getExtensionDir(name: extName) else {
             print("Failed to get plugin directory name for: \(extName)")
             return NSImage(named: "default_image") ?? NSImage()
         }
-        
+
         let pluginDir = extensionsDir.appendingPathComponent(pluginDirName)
         let imageURL = pluginDir.appendingPathComponent(imageName)
-        
+
         print("Loading image from path: \(imageURL.path)")
         if let image = NSImage(contentsOf: imageURL) {
             return image
         } else {
             print("Failed to load image from path: \(imageURL.path)")
         }
-        
+
         // 如果加载失败，返回一个默认图片
         return NSImage(named: "default_image") ?? NSImage()
     }
@@ -231,8 +234,6 @@ struct DiagonalStrikeLine: Shape {
 
 extension View {
     func flipped(horizontal: Bool, vertical: Bool) -> some View {
-        self
-            .scaleEffect(x: horizontal ? -1 : 1, y: vertical ? -1 : 1, anchor: .center)
+        scaleEffect(x: horizontal ? -1 : 1, y: vertical ? -1 : 1, anchor: .center)
     }
 }
-

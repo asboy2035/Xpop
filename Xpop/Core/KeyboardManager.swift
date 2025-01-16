@@ -5,12 +5,12 @@
 //  Created by Dongqi Shen on 2025/1/10.
 //
 
-import Foundation
 import CoreGraphics
+import Foundation
 
 class KeyboardManager {
     static let shared = KeyboardManager()
-    
+
     private let modifierKeywords: [String: CGEventFlags] = [
         "command": .maskCommand,
         "cmd": .maskCommand,
@@ -19,9 +19,9 @@ class KeyboardManager {
         "control": .maskControl,
         "ctrl": .maskControl,
         "shift": .maskShift,
-        "numpad": .maskNumericPad
+        "numpad": .maskNumericPad,
     ]
-    
+
     private let specialKeys: [String: CGKeyCode] = [
         "return": 0x24,
         "space": 0x31,
@@ -50,14 +50,14 @@ class KeyboardManager {
         "f17": 0x40,
         "f18": 0x4F,
         "f19": 0x50,
-        "f20": 0x5A
+        "f20": 0x5A,
     ]
-    
+
     func simulateKeyPress(from command: String) {
         let components = command.lowercased().components(separatedBy: .whitespaces)
         var modifiers: CGEventFlags = []
-        var key: String = ""
-        
+        var key = ""
+
         for component in components {
             if let modifier = modifierKeywords[component] {
                 modifiers.insert(modifier)
@@ -65,7 +65,7 @@ class KeyboardManager {
                 key = component
             }
         }
-        
+
         var keyCode: CGKeyCode = 0
         if key.hasPrefix("0x") {
             if let code = Int(key.dropFirst(2), radix: 16) {
@@ -80,18 +80,18 @@ class KeyboardManager {
                 keyCode = keyCodeValue
             }
         }
-        
+
         if let event = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true) {
             event.flags = modifiers
             event.post(tap: .cghidEventTap)
-            
+
             // 模拟按键释放
             let eventUp = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
             eventUp?.flags = modifiers
             eventUp?.post(tap: .cghidEventTap)
         }
     }
-    
+
     private func charToKeyCode(_ char: UnicodeScalar) -> CGKeyCode? {
         let lowerChar = String(char).lowercased().unicodeScalars.first!
         switch lowerChar {

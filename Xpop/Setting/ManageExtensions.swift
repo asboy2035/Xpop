@@ -8,6 +8,7 @@
 import SwiftUI
 
 // MARK: - ExtensionRow 视图
+
 struct ExtensionRow: View {
     let ext: Extension
     let isEditing: Bool
@@ -19,7 +20,7 @@ struct ExtensionRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                if isEditing && ext._buildin_type != "_buildin" && ext.name != "Search"{
+                if isEditing, ext.buintinType != "_buildin", ext.name != "Search" {
                     Button(action: {
                         onDelete()
                     }) {
@@ -76,6 +77,7 @@ struct ExtensionRow: View {
 }
 
 // MARK: - 自定义 macOS 风格的勾选框样式
+
 struct MacCheckboxToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack {
@@ -92,19 +94,17 @@ struct MacCheckboxToggleStyle: ToggleStyle {
     }
 }
 
-
-
 // MARK: - ExtensionManagerView 主视图
+
 struct ExtensionManagerView: View {
     @StateObject var extManager = ExtensionManager.shared
     @State private var isEditing = false
-    @State private var selectedPluginForSettings: Extension? = nil
+    @State private var selectedPluginForSettings: Extension?
     @State private var showOtherView = false
-    
+
     @Environment(\.locale) var locale
 
     var body: some View {
-        
         VStack {
             Text("Extension Management")
                 .font(.title)
@@ -150,14 +150,14 @@ struct ExtensionManagerView: View {
             }
             .cornerRadius(6)
             .padding([.leading, .trailing], 30) // 设置左右内边距为 30
-        
+
             HStack {
                 Button(action: {
                     withAnimation {
                         isEditing.toggle()
                     }
                 }) {
-                        Text(isEditing ? "Cancel" : "Edit")
+                    Text(isEditing ? "Cancel" : "Edit")
                 }
                 .transition(.scale(scale: isEditing ? 1.2 : 1))
                 .animation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0.3), value: isEditing)
@@ -169,6 +169,7 @@ struct ExtensionManagerView: View {
 }
 
 // MARK: - PluginSettingsView 设置视图
+
 struct PluginSettingsView: View {
     let ext: Extension
     @Environment(\.presentationMode) var presentationMode

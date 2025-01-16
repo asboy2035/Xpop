@@ -12,18 +12,18 @@ struct ManageModelView: View {
     @State private var showSelection = false
     @State private var selectedApps: Set<String> = []
     @State private var showingSheet = false
-    
+
     @Environment(\.locale) var locale
 
     var body: some View {
-        VStack() {
+        VStack {
             Text("Manage Model Providers")
                 .font(.title)
                 .bold()
                 .padding()
 
-            VStack(alignment: .leading, spacing: 0){
-                ZStack{
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack {
                     Text("Current Model Provider")
                         .padding(.top, 10)
                         .padding(.leading, 18)
@@ -34,7 +34,7 @@ struct ManageModelView: View {
                         .foregroundColor(Color.gray)
                     if showSelection {
                         Button(action: {
-                            withAnimation{
+                            withAnimation {
                                 // Remove selected apps
                                 manager.deleteProviders(from: &selectedApps)
                                 selectedApps.removeAll()
@@ -52,8 +52,8 @@ struct ManageModelView: View {
                         .shadow(color: Color.black.opacity(0.2), radius: 4, x: 2, y: 2) // 添加阴影
                     }
                 }
-                
-                List() {
+
+                List {
                     ForEach(manager.providers, id: \.id) { provider in
                         ModelProviderRow(provider: provider, showSelection: $showSelection, selectedApps: $selectedApps)
                     }
@@ -81,7 +81,7 @@ struct ManageModelView: View {
 
                 // "-" Button
                 Button(action: {
-                    withAnimation{
+                    withAnimation {
                         showSelection.toggle()
                     }
                     if !showSelection {
@@ -94,11 +94,9 @@ struct ManageModelView: View {
                         .cornerRadius(5)
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                
             }
             .padding()
         }
-
     }
 }
 
@@ -111,21 +109,20 @@ struct ModelProviderRow: View {
     var body: some View {
         HStack {
             if showSelection {
-                    Button(action: {
-                        if selectedApps.contains(provider.id) {
-                            selectedApps.remove(provider.id)
-                        } else {
-                            selectedApps.insert(provider.id)
-                        }
-                    }) {
-                        Image(systemName: selectedApps.contains(provider.id) ? "checkmark.square.fill" : "square.fill")
-                            .symbolRenderingMode(.palette) // 启用调色板渲染模式
-                            .foregroundStyle(Color.white, Color.gray) // 外轮廓为灰色，填充为白色
+                Button(action: {
+                    if selectedApps.contains(provider.id) {
+                        selectedApps.remove(provider.id)
+                    } else {
+                        selectedApps.insert(provider.id)
                     }
-                    .buttonStyle(.plain)
-                    .background(.clear)
-                    
+                }) {
+                    Image(systemName: selectedApps.contains(provider.id) ? "checkmark.square.fill" : "square.fill")
+                        .symbolRenderingMode(.palette) // 启用调色板渲染模式
+                        .foregroundStyle(Color.white, Color.gray) // 外轮廓为灰色，填充为白色
                 }
+                .buttonStyle(.plain)
+                .background(.clear)
+            }
             VStack(alignment: .leading) {
                 Text(provider.name)
                     .font(.headline)
@@ -165,26 +162,26 @@ struct DeleteButtonStyle: ButtonStyle {
 
 struct AddProviderView: View {
     @State private var providerName: String = "" // Provider Name
-    @State private var baseURL: String = ""      // Base URL
-    @State private var apiKey: String = ""       // API Key
-    @State private var modelsName: String = ""   // Models' name
+    @State private var baseURL: String = "" // Base URL
+    @State private var apiKey: String = "" // API Key
+    @State private var modelsName: String = "" // Models' name
     @State private var isPasswordVisible: Bool = false // 控制是否显示明文
-    
-    @State private var providerNameError: String? = nil // 错误信息
-    @State private var baseURLError: String? = nil
-    @State private var apiKeyError: String? = nil
-    @State private var modelsNameError: String? = nil
-    
+
+    @State private var providerNameError: String? // 错误信息
+    @State private var baseURLError: String?
+    @State private var apiKeyError: String?
+    @State private var modelsNameError: String?
+
     @State private var errorMessage: String = ""
     @State private var testSuccess: Bool = false
 
     @EnvironmentObject var manager: ProviderManager // 自动获取注入的实例
     @Environment(\.dismiss) var dismiss // 添加 dismiss 环境变量
-    
+
     var existingProvider: ModelProvider? // 编辑时传入的已有数据
-    
+
     private let logger = Logger.shared
-    
+
     init(existingProvider: ModelProvider? = nil) {
         self.existingProvider = existingProvider
         _providerName = State(initialValue: existingProvider?.name ?? "")
@@ -201,7 +198,7 @@ struct AddProviderView: View {
                 .fontWeight(.bold)
                 .padding(.bottom, 8)
                 .frame(maxWidth: .infinity, alignment: .center)
-            
+
             // Provider Name Input
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -218,7 +215,7 @@ struct AddProviderView: View {
                         .foregroundColor(.red)
                 }
             }
-            
+
             // Base URL Input
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -235,7 +232,7 @@ struct AddProviderView: View {
                         .foregroundColor(.red)
                 }
             }
-            
+
             // API Key Input
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -267,9 +264,9 @@ struct AddProviderView: View {
                         Text("Test")
                     }
                 }
-                
+
                 HStack {
-                    if (!errorMessage.isEmpty) {
+                    if !errorMessage.isEmpty {
                         Text("Error:")
                             .font(.footnote)
                             .foregroundColor(.red)
@@ -277,22 +274,21 @@ struct AddProviderView: View {
                             .font(.footnote)
                             .foregroundColor(.red)
                     }
-                    
+
                     if testSuccess {
                         Text("Success!")
                             .font(.footnote)
                             .foregroundColor(.green)
-                        
                     }
                 }
-                
+
                 if let error = apiKeyError {
                     Text(error)
                         .font(.footnote)
                         .foregroundColor(.red)
                 }
             }
-            
+
             // Models
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -309,9 +305,9 @@ struct AddProviderView: View {
                         .foregroundColor(.red)
                 }
             }
-            
+
             Spacer()
-            
+
             // Buttons: Cancel and Add
             HStack {
                 Spacer()
@@ -319,7 +315,7 @@ struct AddProviderView: View {
                     dismiss()
                 }
                 .padding(.horizontal)
-                
+
                 Button(existingProvider == nil ? "Add" : "Save") {
                     handleAddButtonClick()
                 }
@@ -330,10 +326,10 @@ struct AddProviderView: View {
         .padding()
         .frame(maxWidth: 400)
     }
-    
+
     private func getModels() async {
         let baseURL = self.baseURL + "/models"
-        let apikey = self.apiKey
+        let apikey = apiKey
         let client = OpenAIChatClient(apiKey: apikey, baseURL: baseURL)
         do {
             let data = try await client.performGetRequest()
@@ -349,7 +345,6 @@ struct AddProviderView: View {
             testSuccess = false
         }
     }
-    
 
     // 校验输入字段并显示错误信息
     private func handleAddButtonClick() {
@@ -359,7 +354,7 @@ struct AddProviderView: View {
         modelsNameError = validateModelsName(modelsName)
 
         // 如果没有错误信息，处理成功逻辑
-        if providerNameError == nil && baseURLError == nil && apiKeyError == nil && modelsNameError == nil {
+        if providerNameError == nil, baseURLError == nil, apiKeyError == nil, modelsNameError == nil {
             if let existingProvider = existingProvider {
                 // 编辑已有数据
                 manager.updateProvider(
@@ -384,7 +379,7 @@ struct AddProviderView: View {
                     dismiss()
                 } catch ModelProviderError.emptyModelsName {
                     modelsNameError = "Models name cannot be empty."
-                } catch ModelProviderError.invalidModelsName(let invalidInput) {
+                } catch let ModelProviderError.invalidModelsName(invalidInput) {
                     modelsNameError = "Invalid models name input: '\(invalidInput)'."
                 } catch {
                     logger.log("Unexpected error:: %{public}@", error.localizedDescription, type: .error)
@@ -399,15 +394,15 @@ struct AddProviderView: View {
             return "Models name cannot be empty."
         }
         let models = modelsName.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        if models.contains(where: { $0.isEmpty }) {
+        if models.contains(where: \.isEmpty) {
             return "Models name must be comma-separated without empty values."
         }
         return nil
     }
 }
 
-//struct ManageAppsView_Previews: PreviewProvider {
+// struct ManageAppsView_Previews: PreviewProvider {
 //    static var previews: some View {
 //        ManageModelView().environmentObject(ProviderManager.shared)
 //    }
-//}
+// }

@@ -11,10 +11,10 @@ class TransPanel: NSPanel {
     // 是否置顶的状态
     var isAlwaysOnTop: Bool = false {
         didSet {
-            self.level = isAlwaysOnTop ? .floating : .normal
+            level = isAlwaysOnTop ? .floating : .normal
         }
     }
-    
+
     override init(contentRect: NSRect,
                   styleMask: NSWindow.StyleMask,
                   backing backingStoreType: NSWindow.BackingStoreType,
@@ -23,17 +23,17 @@ class TransPanel: NSPanel {
                    styleMask: styleMask,
                    backing: backingStoreType,
                    defer: flag)
-        self.isFloatingPanel = true
-        self.level = .floating
-        self.hasShadow = true
-        self.isOpaque = false
-        self.backgroundColor = NSColor.clear
-        self.titleVisibility = .hidden
-        self.titlebarAppearsTransparent = true
-        self.collectionBehavior = [.canJoinAllSpaces, .transient]
+        isFloatingPanel = true
+        level = .floating
+        hasShadow = true
+        isOpaque = false
+        backgroundColor = NSColor.clear
+        titleVisibility = .hidden
+        titlebarAppearsTransparent = true
+        collectionBehavior = [.canJoinAllSpaces, .transient]
     }
 
     override var canBecomeKey: Bool {
-        return true
+        true
     }
 }

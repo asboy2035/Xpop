@@ -12,7 +12,7 @@ import SwiftUI
 struct InstallButton: View {
     var action: () -> Void
     var extensionName: String
-    
+
     @State private var isHovered = false
 
     var body: some View {
@@ -37,7 +37,7 @@ struct ExtensionButton: View {
 
     var body: some View {
         Button(action: {
-            if ext._buildin_type == "_buildin" {
+            if ext.buintinType == "_buildin" {
                 BuiltInAction.actions[ext.name!]?()
             } else {
                 ext.run(selectedText: appDelegate.selectedText)
@@ -48,7 +48,7 @@ struct ExtensionButton: View {
             if let icon = ext.icon, !icon.isEmpty {
                 CustomImage(extName: ext.name!, iconString: icon, size: 28)
                     .foregroundColor(isHovered ? Color.white : Color.primary)
-                
+
             } else if let name = ext.name, !name.isEmpty {
                 Text(name)
                     .foregroundColor(isHovered ? Color.white : Color.primary)
@@ -73,7 +73,7 @@ struct ExtensionButton: View {
 struct BlurEffectWithOpacityView: NSViewRepresentable {
     var opacity: Double
 
-    func makeNSView(context: Context) -> NSView {
+    func makeNSView(context _: Context) -> NSView {
         let containerView = NSView()
         containerView.wantsLayer = true // 必须启用 layer
 
@@ -99,7 +99,7 @@ struct BlurEffectWithOpacityView: NSViewRepresentable {
         return containerView
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: NSView, context _: Context) {
         guard let blurView = nsView.subviews.first as? NSVisualEffectView else { return }
         updateAppearance(for: blurView)
         updateOpacity(for: nsView)
@@ -144,7 +144,7 @@ struct PopView: View {
                         let name = appDelegate.extensionObj!.name!
                         InstallButton(action: {
                             Task {
-                                try? extensionManager.install(ext: appDelegate.extensionObj!)
+                                _ = try? extensionManager.install(ext: appDelegate.extensionObj!)
                                 appDelegate.hideWindow_new()
                             }
                         }, extensionName: name)
@@ -173,6 +173,6 @@ struct PopView: View {
     }
 }
 
-//#Preview {
+// #Preview {
 //    PopView()
-//}
+// }

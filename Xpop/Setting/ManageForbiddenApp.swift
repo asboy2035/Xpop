@@ -5,30 +5,30 @@
 //  Created by Dongqi Shen on 2025/1/8.
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct ManageForbiddenAppView: View {
     @State private var forbiddenApps: [AppInfo] = []
     @State private var showSelection = false
     @State private var selectedApps: Set<String> = []
-    
+
     @Environment(\.locale) var locale
 
     var body: some View {
-        VStack() {
+        VStack {
             Text("Manage Forbidden Apps")
                 .font(.title)
                 .bold()
                 .padding()
-            
+
             Text("Xpop will not effect in the following apps.")
                 .font(.footnote)
                 .foregroundColor(.gray)
                 .padding(.bottom)
 
-            VStack(alignment: .leading, spacing: 0){
-                ZStack{
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack {
                     Text("Forbidden Apps")
                         .padding(.top, 10)
                         .padding(.leading, 18)
@@ -38,8 +38,8 @@ struct ManageForbiddenAppView: View {
                         .font(.system(size: 16)) // 设置字体大小为 18
                         .foregroundColor(Color.gray)
                     if showSelection {
-                        Button(action:{
-                            withAnimation{
+                        Button(action: {
+                            withAnimation {
                                 deleteApps()
                                 selectedApps.removeAll()
                                 showSelection = false
@@ -56,8 +56,8 @@ struct ManageForbiddenAppView: View {
                         .shadow(color: Color.black.opacity(0.2), radius: 4, x: 2, y: 2) // 添加阴影
                     }
                 }
-                
-                List() {
+
+                List {
                     ForEach(forbiddenApps, id: \.id) { app in
                         ForbiddenAppRow(appInfo: app, showSelection: $showSelection, selectedApps: $selectedApps)
                     }
@@ -86,7 +86,7 @@ struct ManageForbiddenAppView: View {
 
                 // "-" Button
                 Button(action: {
-                    withAnimation{
+                    withAnimation {
                         showSelection.toggle()
                     }
                     if !showSelection {
@@ -99,12 +99,11 @@ struct ManageForbiddenAppView: View {
                         .cornerRadius(5)
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                
             }
             .padding()
         }
     }
-    
+
     private func openApplicationsFolder() {
         let panel = NSOpenPanel()
         panel.prompt = "Choose"
@@ -146,7 +145,7 @@ struct ManageForbiddenAppView: View {
             }
         }
     }
-    
+
     private func deleteApps() {
         forbiddenApps.removeAll { app in
             selectedApps.contains(app.id)
@@ -160,7 +159,7 @@ struct ManageForbiddenAppView: View {
                 "name": $0.name,
                 "bundleIdentifier": $0.bundleIdentifier,
                 "path": $0.path,
-                "iconPath": $0.iconPath ?? "" // 保存图标路径
+                "iconPath": $0.iconPath ?? "", // 保存图标路径
             ]
         }
         UserDefaults.standard.set(appData, forKey: "forbiddenApps")
@@ -176,7 +175,6 @@ struct ManageForbiddenAppView: View {
                    let path = appInfo["path"],
                    let iconPath = appInfo["iconPath"],
                    FileManager.default.fileExists(atPath: path) {
-
                     let app = AppInfo(
                         id: bundleIdentifier,
                         name: name,
@@ -194,10 +192,8 @@ struct ManageForbiddenAppView: View {
     private func removeDeletedApps() {
         DispatchQueue.global(qos: .userInitiated).async {
             var validApps: [AppInfo] = []
-            for app in forbiddenApps {
-                if FileManager.default.fileExists(atPath: app.path) {
+            for app in forbiddenApps where FileManager.default.fileExists(atPath: app.path) {
                     validApps.append(app)
-                }
             }
             DispatchQueue.main.async {
                 forbiddenApps = validApps
@@ -223,26 +219,25 @@ struct ForbiddenAppRow: View {
     let appInfo: AppInfo
     @Binding var showSelection: Bool
     @Binding var selectedApps: Set<String>
-    
+
     @Environment(\.locale) var locale
 
     var body: some View {
         HStack {
             if showSelection {
-                    Button(action: {
-                        if selectedApps.contains(appInfo.id) {
-                            selectedApps.remove(appInfo.id)
-                        } else {
-                            selectedApps.insert(appInfo.id)
-                        }
-                    }) {
-                        Image(systemName: selectedApps.contains(appInfo.id) ? "checkmark.square.fill" : "square.fill")
-                            .symbolRenderingMode(.palette) // 启用调色板渲染模式
-                            .foregroundStyle(Color.white, Color.gray) // 外轮廓为灰色，填充为白色
+                Button(action: {
+                    if selectedApps.contains(appInfo.id) {
+                        selectedApps.remove(appInfo.id)
+                    } else {
+                        selectedApps.insert(appInfo.id)
                     }
-                    .buttonStyle(.plain)
-                    .background(.clear)
-                    
+                }) {
+                    Image(systemName: selectedApps.contains(appInfo.id) ? "checkmark.square.fill" : "square.fill")
+                        .symbolRenderingMode(.palette) // 启用调色板渲染模式
+                        .foregroundStyle(Color.white, Color.gray) // 外轮廓为灰色，填充为白色
+                }
+                .buttonStyle(.plain)
+                .background(.clear)
             }
             if let icon = appInfo.icon {
                 Image(nsImage: icon)
@@ -269,7 +264,6 @@ struct ForbiddenAppRow: View {
     }
 }
 
-
 struct AppInfo: Identifiable {
     let id: String // 唯一标识符，使用 bundleIdentifier
     let name: String
@@ -288,7 +282,6 @@ struct ContentView: View {
         ManageForbiddenAppView()
     }
 }
-
 
 #Preview {
     ContentView()

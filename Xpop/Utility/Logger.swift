@@ -17,7 +17,12 @@ struct Logger {
         log = OSLog(subsystem: subsystem, category: "general")
     }
 
-    func log(_ message: StaticString, dso: UnsafeRawPointer? = #dsohandle, _ args: CVarArg..., type: OSLogType = .default) {
+    func log(
+        _ message: StaticString,
+        dso: UnsafeRawPointer? = #dsohandle,
+        _ args: CVarArg...,
+        type: OSLogType = .default
+    ) {
         os_log(message, dso: dso, log: log, type: type, args)
     }
 }

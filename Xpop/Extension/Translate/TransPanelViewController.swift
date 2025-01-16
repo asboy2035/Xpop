@@ -20,11 +20,11 @@ class TransPanelViewController: NSViewController {
     private var cancellables: Set<AnyCancellable> = []
     private var isInitialTrigger = true
     private var srcLang = ""
-    
+
     private var scrollableTextView: ScrollableTextView!
     // 添加一个高度约束的属性
     private var heightConstraint: NSLayoutConstraint!
-    
+
     // streaming
     private var streamBuffer: [String] = [] // 缓冲区保存流式接口接收到的内容
     private var isTyping: Bool = false // 标记是否正在进行打字机输出
@@ -33,59 +33,58 @@ class TransPanelViewController: NSViewController {
     private let typingSpeedMin: TimeInterval = 0.01 // 最小速度
     private let typingSpeedMax: TimeInterval = 0.2 // 最大速度
     private var currentTask: Task<Void, Never>?
-    
+
     private let logger = Logger.shared
 
     // 自定义初始化方法
     init(query: String) {
         self.query = query
         super.init(nibName: nil, bundle: nil)
-        self.detectSrcLang()
+        detectSrcLang()
     }
-    
+
     // 必须实现的初始化器
-    required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func loadView() {
-        self.view = NSView()
-        self.view.frame.size = NSSize(width: 400, height: 256)
+        view = NSView()
+        view.frame.size = NSSize(width: 400, height: 256)
         // 设置最大高度约束
-        let maxHeightConstraint = self.view.heightAnchor.constraint(lessThanOrEqualToConstant: 600)
+        let maxHeightConstraint = view.heightAnchor.constraint(lessThanOrEqualToConstant: 600)
         maxHeightConstraint.isActive = true
-        
+
         // 设置初始高度约束
-        heightConstraint = self.view.heightAnchor.constraint(equalToConstant: 256)
+        heightConstraint = view.heightAnchor.constraint(equalToConstant: 256)
         heightConstraint.isActive = true
 
         // 启用主视图的图层支持
-        self.view.wantsLayer = true
-        self.view.layer?.cornerRadius = 10 // 设置圆角半径
-        self.view.layer?.masksToBounds = true // 裁剪超出边界的内容
-        
-        
+        view.wantsLayer = true
+        view.layer?.cornerRadius = 10 // 设置圆角半径
+        view.layer?.masksToBounds = true // 裁剪超出边界的内容
+
         // 设置毛玻璃效果
-        let visualEffectView = NSVisualEffectView(frame: self.view.bounds)
+        let visualEffectView = NSVisualEffectView(frame: view.bounds)
         visualEffectView.autoresizingMask = [.width, .height]
-        visualEffectView.blendingMode = .withinWindow//.behindWindow
+        visualEffectView.blendingMode = .withinWindow // .behindWindow
         visualEffectView.state = .active
         visualEffectView.material = .popover // .sidebar // 可根据需要选择不同的材质
-        self.view.addSubview(visualEffectView)
-        
+        view.addSubview(visualEffectView)
+
         // 初始化按钮并设置回调
         toggleTopButton = ToggleTopButton()
         toggleTopButton.onToggle = { [weak self] in
             guard let self = self, let panel = self.view.window as? TransPanel else { return }
             panel.isAlwaysOnTop.toggle()
             self.toggleTopButton.image = panel.isAlwaysOnTop ?
-            NSImage(systemSymbolName: "pin.fill", accessibilityDescription: "Pin") :
-            NSImage(systemSymbolName: "pin", accessibilityDescription: "Unpin")
+                NSImage(systemSymbolName: "pin.fill", accessibilityDescription: "Pin") :
+                NSImage(systemSymbolName: "pin", accessibilityDescription: "Unpin")
         }
-        
-        
+
         visualEffectView.addSubview(toggleTopButton)
-        
+
         // 翻译图标
         let iconView = NSImageView()
         iconView.translatesAutoresizingMaskIntoConstraints = false
@@ -93,7 +92,7 @@ class TransPanelViewController: NSViewController {
         iconView.imageScaling = .scaleProportionallyUpOrDown // 按比例缩放
         iconView.contentTintColor = NSColor.labelColor // 设置图标颜色
         visualEffectView.addSubview(iconView)
-        
+
         // 翻译文字说明
         let descriptionLabel = NSTextField(labelWithString: "Translation")
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -103,7 +102,7 @@ class TransPanelViewController: NSViewController {
         descriptionLabel.alignment = .center // 文本居中对齐
         descriptionLabel.lineBreakMode = .byWordWrapping // 支持换行
         visualEffectView.addSubview(descriptionLabel)
-        
+
         // 添加分割线
         let separator = NSBox()
         separator.boxType = .separator // 设置为分割线类型
@@ -121,7 +120,7 @@ class TransPanelViewController: NSViewController {
             pasteboard.setString(content, forType: .string)
         }
         visualEffectView.addSubview(copyButton)
-        
+
         // 初始化RegenerateButton
         let regenerateButton = RegenerateButton()
         regenerateButton.onRegenerate = {
@@ -129,38 +128,46 @@ class TransPanelViewController: NSViewController {
             self.updateTranslationWithStream(query: self.query)
         }
         visualEffectView.addSubview(regenerateButton)
-        
+
         // 源语言按钮
         let srcLangButton = DropdownLangButton(items: ["简体中文", "English", "繁体中文"]) { selectedItem in
             self.logger.log("source language select: %{public}@", selectedItem, type: .debug)
             self.languageState.sourceLanguage = selectedItem
         }
         visualEffectView.addSubview(srcLangButton)
-        
+
         // 目标语言按钮
-        let tgtLangButton = DropdownLangButton(title: LanguageSelectionState().targetLanguage,items: ["简体中文", "English", "繁体中文"]) { selectedItem in
+        let tgtLangButton = DropdownLangButton(
+            title: LanguageSelectionState().targetLanguage,
+            items: ["简体中文", "English", "繁体中文"]
+        ) { selectedItem in
             self.logger.log("target language select: %{public}@", selectedItem, type: .debug)
             UserDefaults.standard.set(selectedItem, forKey: "transTargetLanguage")
             self.languageState.targetLanguage = selectedItem
         }
         visualEffectView.addSubview(tgtLangButton)
-        
+
         // 监听语言状态变化
         languageState.$sourceLanguage
             .combineLatest(languageState.$targetLanguage)
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main) // 加入防抖机制
             .sink { [weak self] source, target in
                 guard let self = self else { return }
-                
+
                 // 判断是否是初始化触发
                 if self.isInitialTrigger {
                     self.isInitialTrigger = false
                     return
                 }
-                
+
                 // 打印调试信息
-                self.logger.log("source language: %{public}@, target language: %{public}@", source, target, type: .debug)
-                
+                self.logger.log(
+                    "source language: %{public}@, target language: %{public}@",
+                    source,
+                    target,
+                    type: .debug
+                )
+
                 // 如果 query 非空，调用更新翻译
                 if !self.query.isEmpty {
                     self.updateTranslationWithStream(query: self.query)
@@ -169,14 +176,14 @@ class TransPanelViewController: NSViewController {
                 }
             }
             .store(in: &cancellables)
-        
+
         // 添加向右箭头图标
         let arrowRightIcon = NSImageView()
         arrowRightIcon.translatesAutoresizingMaskIntoConstraints = false
         arrowRightIcon.image = NSImage(systemSymbolName: "arrow.right", accessibilityDescription: "Arrow Right")
         arrowRightIcon.contentTintColor = .gray // 设置图标颜色
         visualEffectView.addSubview(arrowRightIcon)
-        
+
         // 初始化滚动文本视图
         scrollableTextView = ScrollableTextView()
         scrollableTextView.translatesAutoresizingMaskIntoConstraints = false // 使用 Auto Layout
@@ -187,7 +194,7 @@ class TransPanelViewController: NSViewController {
             self.heightConstraint.animator().constant = totalHeight // 动画更新高度
         }
         visualEffectView.addSubview(scrollableTextView)
-        
+
         NSLayoutConstraint.activate([
             // 翻译图标
             iconView.topAnchor.constraint(equalTo: visualEffectView.topAnchor, constant: 5), // 距离顶部
@@ -196,23 +203,25 @@ class TransPanelViewController: NSViewController {
             iconView.heightAnchor.constraint(equalToConstant: 32), // 图标高度
             // 翻译文本说明
             descriptionLabel.topAnchor.constraint(equalTo: visualEffectView.topAnchor, constant: 13),
-            descriptionLabel.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 40), // 距离左侧 10 点
+            descriptionLabel.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 40),
+            // 距离左侧 10 点
             // 置顶按钮
             toggleTopButton.topAnchor.constraint(equalTo: visualEffectView.topAnchor, constant: 15), // 距离顶部 10 点
-            toggleTopButton.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor, constant: -10), // 距离右侧 10 点
+            toggleTopButton.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor, constant: -10),
+            // 距离右侧 10 点
             toggleTopButton.widthAnchor.constraint(equalToConstant: 28), // 这个pin的图标在垂直方向上的长度比较大。
             toggleTopButton.heightAnchor.constraint(equalToConstant: 20),
             // 分割线
             separator.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 10), // 左侧对齐
             separator.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor, constant: -10), // 右侧对齐
             separator.topAnchor.constraint(equalTo: visualEffectView.topAnchor, constant: 45), // 位于图标下方
-            
+
             // 复制按钮
             copyButton.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor, constant: -10), // 距离底部
             copyButton.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 10), // 距离左侧
             copyButton.widthAnchor.constraint(equalToConstant: 55), // 图标宽度
             copyButton.heightAnchor.constraint(equalToConstant: 28), // 图标高度
-            
+
             // 重新生成按钮
             regenerateButton.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor, constant: -10), // 距离底部
             regenerateButton.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 70), // 距离左侧
@@ -224,38 +233,38 @@ class TransPanelViewController: NSViewController {
             srcLangButton.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 10),
             srcLangButton.widthAnchor.constraint(equalToConstant: 150),
             srcLangButton.heightAnchor.constraint(equalToConstant: 30),
-            
+
             // target语言按钮
             tgtLangButton.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 10),
             tgtLangButton.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor, constant: -10),
             tgtLangButton.widthAnchor.constraint(equalToConstant: 150),
             tgtLangButton.heightAnchor.constraint(equalToConstant: 30),
-            
+
             // 向右箭头图标
             arrowRightIcon.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 8),
             arrowRightIcon.centerXAnchor.constraint(equalTo: visualEffectView.centerXAnchor), // 垂直居中
             arrowRightIcon.widthAnchor.constraint(equalToConstant: 36), // 图标宽度
             arrowRightIcon.heightAnchor.constraint(equalToConstant: 36), // 图标高度
-            
+
             // 文本显示
             scrollableTextView.topAnchor.constraint(equalTo: visualEffectView.topAnchor, constant: 95),
             scrollableTextView.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor, constant: 10),
             scrollableTextView.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor, constant: -10),
             scrollableTextView.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor, constant: -45),
         ])
-        
+
         bindQueryToUpdate()
     }
-    
+
     public func setQuery(query: String) {
         self.query = query
     }
-    
+
     // auto detect source language
     private func detectSrcLang() {
-        let result = LanguageDetector.shared.detectLanguage(for: self.query)
-        self.srcLang = result!.languageName
-        self.languageState.sourceLanguage = self.srcLang
+        let result = LanguageDetector.shared.detectLanguage(for: query)
+        srcLang = result!.languageName
+        languageState.sourceLanguage = srcLang
     }
 
     private func bindQueryToUpdate() {
@@ -272,32 +281,31 @@ class TransPanelViewController: NSViewController {
     private func updateTranslation(query: String) {
         let source = languageState.sourceLanguage
         let target = languageState.targetLanguage
-        
+
         // 调用翻译函数
         Task { [weak self] in
             guard let self = self else { return }
             self.chatResult = await self.getTranslateResult(source: source, target: target, query: query)
-            
+
             // 更新 TextView 显示结果
             DispatchQueue.main.async {
                 self.scrollableTextView.setTextWithTypingEffect(self.chatResult)
             }
         }
     }
-    
+
     private func updateTranslationWithStream(query: String) {
         let source = languageState.sourceLanguage
         let target = languageState.targetLanguage
-        
+
         // 如果有正在运行的任务，取消它
         currentTask?.cancel()
         // 立即将 currentTask 设置为 nil，以确保不会有其他代码引用旧的任务
         currentTask = nil
-        
+
         currentTask = Task { [weak self] in
             guard let self = self else { return }
             do {
-                
                 // 切换到主线程开始任务
                 await MainActor.run {
                     self.streamBuffer.removeAll()
@@ -331,16 +339,16 @@ class TransPanelViewController: NSViewController {
     private func startTypingEffectIfNeeded() {
         guard !isTyping else { return }
         isTyping = true
-        
+
         typingTimer = Timer.scheduledTimer(withTimeInterval: currentTypingSpeed, repeats: true) { [weak self] timer in
             guard let self = self else {
                 timer.invalidate()
                 return
             }
-            
+
             // 动态调整打字速度
             self.adjustTypingSpeed()
-            
+
             if self.streamBuffer.isEmpty {
                 // 如果缓冲区为空，暂停打字效果
                 self.isTyping = false
@@ -363,7 +371,7 @@ class TransPanelViewController: NSViewController {
             currentTypingSpeed = min(typingSpeedMax, currentTypingSpeed + 0.01)
         }
     }
-    
+
     private func getTranslateResult(source: String, target: String, query: String) async -> String {
         let client = OpenAIChatClient()
         let systemPrompt = "你是一位专业的翻译。请将用户输入的文本由 \(source) 翻译成 \(target)，保持原文的语气和风格。"
@@ -380,8 +388,9 @@ class TransPanelViewController: NSViewController {
             return "翻译失败，请稍后重试。"
         }
     }
-    
-    private func getTranslateResultStream(source: String, target: String, query: String) async throws -> AsyncStream<String> {
+
+    private func getTranslateResultStream(source: String, target: String,
+                                          query: String) async throws -> AsyncStream<String> {
         let client = OpenAIChatClient()
         let systemPrompt = "你是一位专业的翻译。请将用户输入的文本由 \(source) 翻译成 \(target)，保持原文的语气和风格。"
         let messages = [
@@ -390,27 +399,22 @@ class TransPanelViewController: NSViewController {
         ]
         return try await client.streamChatCompletion(messages: messages)
     }
-    
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
 
     deinit {
         timer?.invalidate()
     }
-    
+
     override func mouseDown(with event: NSEvent) {
-        guard let window = self.view.window else { return }
+        guard let window = view.window else { return }
         window.performDrag(with: event)
     }
-    
+
     @objc private func toggleTop() {
-        guard let panel = self.view.window as? TransPanel else { return }
+        guard let panel = view.window as? TransPanel else { return }
         panel.isAlwaysOnTop.toggle() // 切换置顶状态
         toggleTopButton.image = panel.isAlwaysOnTop ?
-        NSImage(systemSymbolName: "pin.fill", accessibilityDescription: "Pin") : // 置顶图标
-        NSImage(systemSymbolName: "pin", accessibilityDescription: "Unpin") // 取消置顶图标
+            NSImage(systemSymbolName: "pin.fill", accessibilityDescription: "Pin") : // 置顶图标
+            NSImage(systemSymbolName: "pin", accessibilityDescription: "Unpin") // 取消置顶图标
     }
 }
 
@@ -420,23 +424,24 @@ class ToggleTopButton: NSButton {
 
     init() {
         super.init(frame: .zero)
-        self.translatesAutoresizingMaskIntoConstraints = false
-        self.bezelStyle = .rounded//.regularSquare
-        self.image = NSImage(systemSymbolName: "pin", accessibilityDescription: "Unpin")
-        self.target = self
-        self.action = #selector(toggleTop)
-        self.wantsLayer = true
-        self.isBordered = false
+        translatesAutoresizingMaskIntoConstraints = false
+        bezelStyle = .rounded // .regularSquare
+        image = NSImage(systemSymbolName: "pin", accessibilityDescription: "Unpin")
+        target = self
+        action = #selector(toggleTop)
+        wantsLayer = true
+        isBordered = false
 
         // 设置圆角和默认背景
-        self.layer?.cornerRadius = 6 // 调整圆角半径
-        self.layer?.masksToBounds = true
-        self.layer?.backgroundColor = NSColor.clear.cgColor
+        layer?.cornerRadius = 6 // 调整圆角半径
+        layer?.masksToBounds = true
+        layer?.backgroundColor = NSColor.clear.cgColor
 
-        self.updateHoverEffect(false)
+        updateHoverEffect(false)
     }
 
-    required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -444,29 +449,29 @@ class ToggleTopButton: NSButton {
         super.updateTrackingAreas()
 
         if let trackingArea = trackingArea {
-            self.removeTrackingArea(trackingArea)
+            removeTrackingArea(trackingArea)
         }
 
         trackingArea = NSTrackingArea(
-            rect: self.bounds,
+            rect: bounds,
             options: [.mouseEnteredAndExited, .activeAlways],
             owner: self,
             userInfo: nil
         )
 
         if let trackingArea = trackingArea {
-            self.addTrackingArea(trackingArea)
+            addTrackingArea(trackingArea)
         }
     }
 
     override func mouseEntered(with event: NSEvent) {
         super.mouseEntered(with: event)
-        self.updateHoverEffect(true)
+        updateHoverEffect(true)
     }
 
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
-        self.updateHoverEffect(false)
+        updateHoverEffect(false)
     }
 
     @objc private func toggleTop() {
@@ -476,10 +481,10 @@ class ToggleTopButton: NSButton {
     private func updateHoverEffect(_ isHovered: Bool) {
         if isHovered {
             // 设置加深的背景色和圆角
-            self.layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.2).cgColor
+            layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.2).cgColor
         } else {
             // 恢复为透明
-            self.layer?.backgroundColor = NSColor.clear.cgColor
+            layer?.backgroundColor = NSColor.clear.cgColor
         }
     }
 }
@@ -487,45 +492,46 @@ class ToggleTopButton: NSButton {
 class CopyButton: NSButton {
     var onCopy: (() -> Void)?
     private var trackingArea: NSTrackingArea?
-    
+
     init() {
         super.init(frame: .zero)
-        self.translatesAutoresizingMaskIntoConstraints = false
-        self.bezelStyle = .rounded
+        translatesAutoresizingMaskIntoConstraints = false
+        bezelStyle = .rounded
         // 设置自定义 Cell和图标
         let customCell = CustomButtonCell()
-        self.cell = customCell
+        cell = customCell
         let image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: "Copy")!
-        
-        let resizedImage = image.resized(to: NSSize(width: 15, height: 15)).flippedVertically()// 调整图标大小
+
+        let resizedImage = image.resized(to: NSSize(width: 15, height: 15)).flippedVertically() // 调整图标大小
 //        self.image = image
         self.image = resizedImage
-        self.imagePosition = .imageLeading
-        
+        imagePosition = .imageLeading
+
         // 设置富文本标题，指定颜色
         let titleString = "复制"
         let attributedTitle = NSAttributedString(
             string: titleString,
             attributes: [
-                .foregroundColor: NSColor.labelColor, //NSColor(deviceWhite: 0.8, alpha: 1.0), // 浅灰色
-                .font: NSFont.systemFont(ofSize: 13) // 设置字体大小
+                .foregroundColor: NSColor.labelColor, // NSColor(deviceWhite: 0.8, alpha: 1.0), // 浅灰色
+                .font: NSFont.systemFont(ofSize: 13), // 设置字体大小
             ]
         )
         self.attributedTitle = attributedTitle // 设置富文本标题
-        
-        self.target = self
-        self.action = #selector(copyAction)
-        self.wantsLayer = true
-        self.isBordered = false
-        // 设置圆角和默认背景
-        self.layer?.cornerRadius = 6
-        self.layer?.masksToBounds = true
-        self.layer?.backgroundColor = NSColor.clear.cgColor
 
-        self.updateHoverEffect(false)
+        target = self
+        action = #selector(copyAction)
+        wantsLayer = true
+        isBordered = false
+        // 设置圆角和默认背景
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+
+        updateHoverEffect(false)
     }
 
-    required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -533,29 +539,29 @@ class CopyButton: NSButton {
         super.updateTrackingAreas()
 
         if let trackingArea = trackingArea {
-            self.removeTrackingArea(trackingArea)
+            removeTrackingArea(trackingArea)
         }
 
         trackingArea = NSTrackingArea(
-            rect: self.bounds,
+            rect: bounds,
             options: [.mouseEnteredAndExited, .activeAlways],
             owner: self,
             userInfo: nil
         )
 
         if let trackingArea = trackingArea {
-            self.addTrackingArea(trackingArea)
+            addTrackingArea(trackingArea)
         }
     }
 
     override func mouseEntered(with event: NSEvent) {
         super.mouseEntered(with: event)
-        self.updateHoverEffect(true)
+        updateHoverEffect(true)
     }
 
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
-        self.updateHoverEffect(false)
+        updateHoverEffect(false)
     }
 
     @objc private func copyAction() {
@@ -564,9 +570,9 @@ class CopyButton: NSButton {
 
     private func updateHoverEffect(_ isHovered: Bool) {
         if isHovered {
-            self.layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.2).cgColor
+            layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.2).cgColor
         } else {
-            self.layer?.backgroundColor = NSColor.clear.cgColor
+            layer?.backgroundColor = NSColor.clear.cgColor
         }
     }
 }
@@ -574,43 +580,47 @@ class CopyButton: NSButton {
 class RegenerateButton: NSButton {
     var onRegenerate: (() -> Void)?
     private var trackingArea: NSTrackingArea?
-    
+
     init() {
         super.init(frame: .zero)
-        self.translatesAutoresizingMaskIntoConstraints = false
-        self.bezelStyle = .rounded
+        translatesAutoresizingMaskIntoConstraints = false
+        bezelStyle = .rounded
         // 设置自定义 Cell和图标
         let customCell = CustomButtonCell()
-        self.cell = customCell
-        let image = NSImage(systemSymbolName: "arrow.trianglehead.2.clockwise.rotate.90", accessibilityDescription: "Copy")!
-        let resizedImage = image.resized(to: NSSize(width: 15, height: 15))// 调整图标大小
+        cell = customCell
+        let image = NSImage(
+            systemSymbolName: "arrow.trianglehead.2.clockwise.rotate.90",
+            accessibilityDescription: "Copy"
+        )!
+        let resizedImage = image.resized(to: NSSize(width: 15, height: 15)) // 调整图标大小
         self.image = resizedImage
-        self.imagePosition = .imageLeading
-        
+        imagePosition = .imageLeading
+
         // 设置富文本标题，指定颜色
         let titleString = "重新生成"
         let attributedTitle = NSAttributedString(
             string: titleString,
             attributes: [
                 .foregroundColor: NSColor.labelColor,
-                .font: NSFont.systemFont(ofSize: 13) // 设置字体大小
+                .font: NSFont.systemFont(ofSize: 13), // 设置字体大小
             ]
         )
         self.attributedTitle = attributedTitle // 设置富文本标题
-        
-        self.target = self
-        self.action = #selector(regenerateAction)
-        self.wantsLayer = true
-        self.isBordered = false
-        // 设置圆角和默认背景
-        self.layer?.cornerRadius = 6
-        self.layer?.masksToBounds = true
-        self.layer?.backgroundColor = NSColor.clear.cgColor
 
-        self.updateHoverEffect(false)
+        target = self
+        action = #selector(regenerateAction)
+        wantsLayer = true
+        isBordered = false
+        // 设置圆角和默认背景
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+
+        updateHoverEffect(false)
     }
 
-    required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -618,41 +628,41 @@ class RegenerateButton: NSButton {
         super.updateTrackingAreas()
 
         if let trackingArea = trackingArea {
-            self.removeTrackingArea(trackingArea)
+            removeTrackingArea(trackingArea)
         }
 
         trackingArea = NSTrackingArea(
-            rect: self.bounds,
+            rect: bounds,
             options: [.mouseEnteredAndExited, .activeAlways],
             owner: self,
             userInfo: nil
         )
 
         if let trackingArea = trackingArea {
-            self.addTrackingArea(trackingArea)
+            addTrackingArea(trackingArea)
         }
     }
 
     override func mouseEntered(with event: NSEvent) {
         super.mouseEntered(with: event)
-        self.updateHoverEffect(true)
+        updateHoverEffect(true)
     }
 
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
-        self.updateHoverEffect(false)
+        updateHoverEffect(false)
     }
 
     @objc private func regenerateAction() {
-        self.updateHoverEffect(false)
+        updateHoverEffect(false)
         onRegenerate?()
     }
 
     private func updateHoverEffect(_ isHovered: Bool) {
         if isHovered {
-            self.layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.2).cgColor
+            layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.2).cgColor
         } else {
-            self.layer?.backgroundColor = NSColor.clear.cgColor
+            layer?.backgroundColor = NSColor.clear.cgColor
         }
     }
 }
@@ -661,28 +671,28 @@ extension NSImage {
     func resized(to newSize: NSSize) -> NSImage {
         let newImage = NSImage(size: newSize)
         newImage.lockFocus()
-        self.draw(in: NSRect(origin: .zero, size: newSize), from: .zero, operation: .sourceOver, fraction: 1.0)
+        draw(in: NSRect(origin: .zero, size: newSize), from: .zero, operation: .sourceOver, fraction: 1.0)
         newImage.unlockFocus()
         return newImage
     }
+
     // 返回沿垂直轴翻转后的图像
     func flippedVertically() -> NSImage {
-        let newImage = NSImage(size: self.size)
+        let newImage = NSImage(size: size)
         newImage.lockFocus()
-        
+
         // 设置变换：垂直轴对称
         let transform = NSAffineTransform()
-        transform.translateX(by: 0, yBy: self.size.height) // 垂直方向移动到顶边界
+        transform.translateX(by: 0, yBy: size.height) // 垂直方向移动到顶边界
         transform.scaleX(by: 1.0, yBy: -1.0) // 垂直方向翻转
         transform.concat()
-        
+
         // 绘制原始图像到新的上下文中
-        self.draw(at: .zero, from: .zero, operation: .sourceOver, fraction: 1.0)
-        
+        draw(at: .zero, from: .zero, operation: .sourceOver, fraction: 1.0)
+
         newImage.unlockFocus()
         return newImage
     }
-    
 }
 
 class CustomButtonCell: NSButtonCell {
@@ -692,14 +702,15 @@ class CustomButtonCell: NSButtonCell {
         self.imageOffset = imageOffset
         super.init(textCell: "") // 调用 NSButtonCell 的指定初始化器
     }
-    
-    required init(coder: NSCoder) {
+
+    @available(*, unavailable)
+    required init(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func drawImage(_ image: NSImage, withFrame frame: NSRect, in controlView: NSView) {
+    override func drawImage(_ image: NSImage, withFrame frame: NSRect, in _: NSView) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
-        
+
         context.saveGState()
 
         // 偏移图片位置
@@ -729,23 +740,23 @@ class DropdownLangButton: NSButton {
 
     init(title: String = "自动检测", items: [String], onSelect: @escaping (String) -> Void) {
         super.init(frame: .zero)
-        self.translatesAutoresizingMaskIntoConstraints = false
-        self.bezelStyle = .rounded
-         
+        translatesAutoresizingMaskIntoConstraints = false
+        bezelStyle = .rounded
+
         let customCell = CustomButtonCell(imageOffset: imageOffset)
-        self.cell = customCell
+        cell = customCell
         let image = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: "Dropdown")!.flippedVertically()
         self.image = image
         self.title = title
-        
-        self.imagePosition = .imageTrailing
-        self.wantsLayer = true
-        self.isBordered = false
-        
+
+        imagePosition = .imageTrailing
+        wantsLayer = true
+        isBordered = false
+
         // 设置按钮圆角和背景
-        self.layer?.cornerRadius = 6
-        self.layer?.masksToBounds = true
-        self.layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.1).cgColor
+        layer?.cornerRadius = 6
+        layer?.masksToBounds = true
+        layer?.backgroundColor = NSColor.systemGray.withAlphaComponent(0.1).cgColor
 
         // 初始化菜单
         dropdownMenu = NSMenu()
@@ -760,33 +771,33 @@ class DropdownLangButton: NSButton {
         self.onSelect = onSelect
     }
 
-    required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     @objc private func selectItem(_ sender: NSMenuItem) {
         guard let item = sender.representedObject as? String else { return }
-        self.title = item // 更新按钮标题
-        onSelect?(item)   // 调用选择回调
+        title = item // 更新按钮标题
+        onSelect?(item) // 调用选择回调
     }
 
-    override func mouseDown(with event: NSEvent) {
-        guard let superview = self.superview else { return }
+    override func mouseDown(with _: NSEvent) {
+        guard let superview = superview else { return }
 
         // 调整菜单宽度以匹配按钮宽度
         adjustMenuWidth()
         // 计算菜单的位置：按钮的左下角
-        let buttonFrame = self.frame
+        let buttonFrame = frame
         let menuOrigin = CGPoint(x: buttonFrame.minX, y: buttonFrame.minY - 10)
 
         // 弹出菜单
         dropdownMenu.popUp(positioning: nil, at: menuOrigin, in: superview)
     }
-    
-    
+
     private func adjustMenuWidth() {
         // 获取按钮的宽度
-        let buttonWidth = self.frame.width
+        let buttonWidth = frame.width
 
         // 设置菜单的最小宽度
         dropdownMenu.minimumWidth = buttonWidth
@@ -800,7 +811,7 @@ class DropdownLangButton: NSButton {
                 string: menuItem.title,
                 attributes: [
                     .font: NSFont.systemFont(ofSize: 13),
-                    .paragraphStyle: paragraphStyle
+                    .paragraphStyle: paragraphStyle,
                 ]
             )
         }
@@ -810,28 +821,28 @@ class DropdownLangButton: NSButton {
 class ScrollableTextView: NSView {
     // 翻转视图的坐标系统
     override var isFlipped: Bool {
-        return true
+        true
     }
-    
+
     private let scrollView: NSScrollView
     private let textView: NSTextView
     private let maxHeight: CGFloat = 456
-    
+
     private var typingTimer: Timer?
     private var fullText: String = ""
     private var currentIndex: Int = 0
-    
+
     var onHeightChange: ((CGFloat) -> Void)? // 高度变化的回调
-    
+
     // streaming
     private var currentText: String = "" // 当前显示的文本内容
-    private var isTyping: Bool = false  // 标记是否正在进行打字效果
+    private var isTyping: Bool = false // 标记是否正在进行打字效果
     private let typingSpeedMin: TimeInterval = 0.01 // 最小速度
-    private let typingSpeedMax: TimeInterval = 0.2  // 最大速度
+    private let typingSpeedMax: TimeInterval = 0.2 // 最大速度
     private var currentTypingSpeed: TimeInterval = 0.05 // 当前打字速度
     // 新增一个缓冲区属性
     private var internalStreamBuffer: [String] = []
-    
+
     override init(frame frameRect: NSRect) {
         // 初始化滚动视图，初始高度设为0，后续根据内容调整
         scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: frameRect.width, height: 0))
@@ -842,23 +853,22 @@ class ScrollableTextView: NSView {
         scrollView.drawsBackground = false
         scrollView.backgroundColor = .clear
 
-        
         // 创建文本存储、布局管理器和文本容器
         let textStorage = NSTextStorage()
         let layoutManager = NSLayoutManager()
         textStorage.addLayoutManager(layoutManager)
-        
+
         let textContainer = NSTextContainer(containerSize: NSSize(
             width: frameRect.width,
             height: CGFloat.greatestFiniteMagnitude
         ))
         textContainer.widthTracksTextView = true
         layoutManager.addTextContainer(textContainer)
-        
+
         // 初始化文本视图
         textView = NSTextView(frame: NSRect(origin: .zero, size: frameRect.size),
                               textContainer: textContainer)
-        
+
         // 配置文本视图
         textView.minSize = NSSize(width: 0.0, height: 0.0)
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude,
@@ -871,7 +881,7 @@ class ScrollableTextView: NSView {
         textView.backgroundColor = .clear
         textView.textColor = NSColor.labelColor
         textView.font = NSFont.systemFont(ofSize: 14)
-        
+
         // 设置自动布局
         textView.autoresizingMask = [.width]
         textContainer.containerSize = NSSize(
@@ -879,18 +889,18 @@ class ScrollableTextView: NSView {
             height: CGFloat.greatestFiniteMagnitude
         )
         textContainer.widthTracksTextView = true
-        
+
         // 设置滚动视图的文档视图
         scrollView.documentView = textView
-        
+
         super.init(frame: frameRect)
-        
+
         // 添加滚动视图到父视图
-        self.addSubview(scrollView)
-        
+        addSubview(scrollView)
+
         // 设置滚动视图的自动调整
         scrollView.autoresizingMask = [.width]
-        
+
         // 监听 NSTextView 内容变化
         NotificationCenter.default.addObserver(
             self,
@@ -899,20 +909,21 @@ class ScrollableTextView: NSView {
             object: textView
         )
     }
-    
-    required init?(coder: NSCoder) {
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    @objc private func textDidChange(_ notification: Notification) {
+
+    @objc private func textDidChange(_: Notification) {
         adjustHeight()
     }
-    
+
     private func adjustHeight() {
         // 计算文本内容所需的高度
         let textHeight = textView.layoutManager?.usedRect(for: textView.textContainer!).height ?? 0
         let desiredHeight = ceil(textHeight)
-        
+
         // 判断是否需要启用滚动
         if desiredHeight <= maxHeight {
             // 不需要滚动，调整滚动视图和文本视图的高度
@@ -927,14 +938,14 @@ class ScrollableTextView: NSView {
             textView.frame.size.height = desiredHeight
             onHeightChange?(maxHeight)
         }
-        
+
         // 确保 textView 的 origin 固定
         textView.frame.origin = .zero
-        
+
         // 通知布局更新
-        self.needsLayout = true
+        needsLayout = true
     }
-    
+
     func setText(_ text: String) {
         stopTypingEffect() // 停止任何打字机效果
 
@@ -946,20 +957,20 @@ class ScrollableTextView: NSView {
         textView.layoutManager?.ensureLayout(for: textView.textContainer!)
         adjustHeight()
     }
-    
+
     override func layout() {
         super.layout()
         // 保持滚动视图的宽度与父视图一致
-        scrollView.frame.size.width = self.bounds.width
-        textView.frame.size.width = self.bounds.width
-        
+        scrollView.frame.size.width = bounds.width
+        textView.frame.size.width = bounds.width
+
         // 确保 textView 的 origin 固定
         textView.frame.origin = .zero
-        
+
         // 重新调整高度
         adjustHeight()
     }
-    
+
     func stopTypingEffect() {
         isTyping = false
         typingTimer?.invalidate()
@@ -969,28 +980,28 @@ class ScrollableTextView: NSView {
         currentTypingSpeed = 0.05 // 当前打字速度
         internalStreamBuffer.removeAll()
     }
-    
+
     func setTextWithTypingEffect(_ text: String, typingSpeed: TimeInterval = 0.05) {
         stopTypingEffect()
         fullText = text
         currentIndex = 0
         textView.string = ""
-        
+
         typingTimer = Timer.scheduledTimer(withTimeInterval: typingSpeed, repeats: true) { [weak self] timer in
             guard let self = self else {
                 timer.invalidate()
                 return
             }
-            
+
             if self.currentIndex < self.fullText.count {
                 let nextIndex = self.fullText.index(self.fullText.startIndex, offsetBy: self.currentIndex + 1)
                 let substring = String(self.fullText[..<nextIndex])
                 self.textView.string = substring
                 self.currentIndex += 1
-                
+
                 // 不需要滚动到末尾，因为视图高度在增加
-                 self.textView.scrollToEndOfDocument(nil)
-                
+                self.textView.scrollToEndOfDocument(nil)
+
                 // 调整高度
                 self.adjustHeight()
             } else {
@@ -998,7 +1009,7 @@ class ScrollableTextView: NSView {
             }
         }
     }
-    
+
     func setTextWithTypingEffectStream(streamBuffer: [String]) {
         // 将传入的缓冲区内容追加到内部缓冲区
         internalStreamBuffer.append(contentsOf: streamBuffer)
@@ -1012,7 +1023,7 @@ class ScrollableTextView: NSView {
                 timer.invalidate()
                 return
             }
-            
+
             // 根据缓冲区大小动态调整速度
             let bufferLength = self.internalStreamBuffer.count
             if bufferLength > 10 {
@@ -1020,7 +1031,7 @@ class ScrollableTextView: NSView {
             } else if bufferLength < 3 {
                 currentTypingSpeed = min(typingSpeedMax, currentTypingSpeed + 0.01)
             }
-            if self.internalStreamBuffer.isEmpty && self.currentText == self.textView.string {
+            if self.internalStreamBuffer.isEmpty, self.currentText == self.textView.string {
                 // 停止计时器
                 self.isTyping = false
                 timer.invalidate()
@@ -1041,13 +1052,12 @@ class ScrollableTextView: NSView {
             }
         }
     }
-    
-    
+
     public func getTextContent() -> String {
-        let result = self.textView.string
+        let result = textView.string
         return result
     }
-    
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }

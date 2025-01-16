@@ -5,8 +5,8 @@
 //  Created by Dongqi Shen on 2025/1/8.
 //
 
-import SwiftUI
 import Cocoa
+import SwiftUI
 
 // 定义输入事件类型
 enum InputEvent {
@@ -31,7 +31,7 @@ class InputEventMonitor {
     private var localMonitor: Any?
     private var globalMonitor: Any?
     private var eventCombinations: [InputEventCombination] = []
-    
+
     // 最近的鼠标按下和弹起位置（只允许外部读取）
     private(set) var lastMouseDownLocation: NSPoint? // 只读
     private(set) var lastMouseUpLocation: NSPoint? // 只读
@@ -40,7 +40,15 @@ class InputEventMonitor {
 
     // 注册本地事件监控
     func startLocalMonitoring() {
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp, .leftMouseDragged, .mouseMoved, .scrollWheel, .keyDown, .keyUp]) { [weak self] event in
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [
+            .leftMouseDown,
+            .leftMouseUp,
+            .leftMouseDragged,
+            .mouseMoved,
+            .scrollWheel,
+            .keyDown,
+            .keyUp,
+        ]) { [weak self] event in
             self?.handleEvent(event)
             return event
         }
@@ -48,7 +56,15 @@ class InputEventMonitor {
 
     // 注册全局事件监控
     func startGlobalMonitoring() {
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp, .leftMouseDragged, .mouseMoved, .scrollWheel, .keyDown, .keyUp]) { [weak self] event in
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
+            .leftMouseDown,
+            .leftMouseUp,
+            .leftMouseDragged,
+            .mouseMoved,
+            .scrollWheel,
+            .keyDown,
+            .keyUp,
+        ]) { [weak self] event in
             self?.handleEvent(event)
         }
     }
@@ -61,8 +77,8 @@ class InputEventMonitor {
         if let globalMonitor = globalMonitor {
             NSEvent.removeMonitor(globalMonitor)
         }
-        self.localMonitor = nil
-        self.globalMonitor = nil
+        localMonitor = nil
+        globalMonitor = nil
     }
 
     // 添加输入事件组合
@@ -94,12 +110,10 @@ class InputEventMonitor {
             return
         }
 
-        for combination in eventCombinations {
-            if combination.handleEvent(inputEvent) {
-                // 添加延迟以处理鼠标抖动
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    combination.onTrigger?()
-                }
+        for combination in eventCombinations where combination.handleEvent(inputEvent) {
+            // 添加延迟以处理鼠标抖动
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                combination.onTrigger?()
             }
         }
     }
@@ -116,9 +130,9 @@ class DoubleClickCombination: InputEventCombination {
 
     func handleEvent(_ event: InputEvent) -> Bool {
         switch event {
-        case .mouseDown(let e):
+        case let .mouseDown(mouseEvent):
             // 检查是否为双击事件
-            if e.clickCount == 2 {
+            if mouseEvent.clickCount == 2 {
                 return true
             }
         default:
@@ -132,14 +146,14 @@ class DoubleClickCombination: InputEventCombination {
 class ScrollCombination: InputEventCombination {
     let identifier: String
     var onTrigger: (() -> Void)?
-    
+
     init(identifier: String = "Scroll") {
         self.identifier = identifier
     }
-    
+
     func handleEvent(_ event: InputEvent) -> Bool {
         switch event {
-        case .scrollWheel(_):
+        case .scrollWheel:
             return true
         default:
             break
@@ -166,9 +180,9 @@ class DragAndDropCombination: InputEventCombination {
         case .mouseDown:
             // 清空记录并记录按下事件
             dragEvents.removeAll()
-        case .mouseDragged(let e):
+        case let .mouseDragged(mouseEvent):
             // 记录拖拽事件
-            dragEvents.append(e)
+            dragEvents.append(mouseEvent)
         case .mouseUp:
             // 检查是否满足条件
             if dragEvents.count >= dragThreshold {
@@ -186,18 +200,18 @@ class DragAndDropCombination: InputEventCombination {
 class KeyPressCombination: InputEventCombination {
     let identifier: String
     var onTrigger: (() -> Void)?
-    
+
     private let keyCode: UInt16
-    
+
     init(identifier: String = "KeyPress", keyCode: UInt16) {
         self.identifier = identifier
         self.keyCode = keyCode
     }
-    
+
     func handleEvent(_ event: InputEvent) -> Bool {
         switch event {
-        case .keyDown(let e):
-            if e.keyCode == keyCode {
+        case let .keyDown(keyEvent):
+            if keyEvent.keyCode == keyCode {
                 return true
             }
         default:
@@ -211,14 +225,14 @@ class KeyPressCombination: InputEventCombination {
 class CustomInputEventHandler: InputEventCombination {
     let identifier: String
     private let handler: (InputEvent) -> Bool
-    var onTrigger: (() -> Void)? = nil
-    
+    var onTrigger: (() -> Void)?
+
     init(identifier: String = "CustomInputEvent", handler: @escaping (InputEvent) -> Bool) {
         self.identifier = identifier
         self.handler = handler
     }
-    
+
     func handleEvent(_ event: InputEvent) -> Bool {
-        return handler(event)
+        handler(event)
     }
 }

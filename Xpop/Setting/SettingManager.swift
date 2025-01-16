@@ -5,8 +5,8 @@
 //  Created by Dongqi Shen on 2025/1/8.
 //
 
-import Foundation
 import Combine
+import Foundation
 import SwiftUI
 
 class SettingsManager: ObservableObject {
@@ -32,18 +32,19 @@ class SettingsManager: ObservableObject {
     @Published var chosenLanguage: String {
         didSet { UserDefaults.standard.set(chosenLanguage, forKey: Keys.chosenLanguage) }
     }
+
     @Published var enableForceCopy: Bool {
-        didSet {UserDefaults.standard.set(enableForceCopy, forKey: Keys.enableForceCopy) }
+        didSet { UserDefaults.standard.set(enableForceCopy, forKey: Keys.enableForceCopy) }
     }
 
     private init() {
         // 从 UserDefaults 初始化设置值
-        self.chosenProviderId = UserDefaults.standard.string(forKey: Keys.chosenProviderId) ?? ""
-        self.chosenProviderName = UserDefaults.standard.string(forKey: Keys.chosenProviderName) ?? ""
-        self.chosenModels = UserDefaults.standard.stringArray(forKey: Keys.chosenModels) ?? [""]
-        self.chosenModel = UserDefaults.standard.string(forKey: Keys.chosenModel) ?? ""
-        self.chosenLanguage = UserDefaults.standard.string(forKey: Keys.chosenLanguage) ?? "English"
-        self.enableForceCopy = UserDefaults.standard.bool(forKey: Keys.enableForceCopy)
+        chosenProviderId = UserDefaults.standard.string(forKey: Keys.chosenProviderId) ?? ""
+        chosenProviderName = UserDefaults.standard.string(forKey: Keys.chosenProviderName) ?? ""
+        chosenModels = UserDefaults.standard.stringArray(forKey: Keys.chosenModels) ?? [""]
+        chosenModel = UserDefaults.standard.string(forKey: Keys.chosenModel) ?? ""
+        chosenLanguage = UserDefaults.standard.string(forKey: Keys.chosenLanguage) ?? "English"
+        enableForceCopy = UserDefaults.standard.bool(forKey: Keys.enableForceCopy)
     }
 
     // 设置键名的管理

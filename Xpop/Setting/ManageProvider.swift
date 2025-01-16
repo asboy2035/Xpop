@@ -9,10 +9,10 @@ import Foundation
 
 // 模型供应商及相关信息
 struct ModelProvider: Codable {
-    let id: String               // 唯一标识供应商
-    var name: String             // 供应商名称
-    var baseURL: String          // 供应商的 Base URL
-    var apiKey: String           // API Key（加密存储推荐）
+    let id: String // 唯一标识供应商
+    var name: String // 供应商名称
+    var baseURL: String // 供应商的 Base URL
+    var apiKey: String // API Key（加密存储推荐）
     var supportedModels: [String] // 支持的模型类型
 }
 
@@ -21,10 +21,11 @@ enum ModelProviderError: Error {
     case invalidModelsName(String) // 包含具体的错误信息
 }
 
-func createModelProvider(providerName: String, baseURL: String, apiKey: String, modelsName: String) throws -> ModelProvider {
+func createModelProvider(providerName: String, baseURL: String, apiKey: String,
+                         modelsName: String) throws -> ModelProvider {
     // 处理用户输入的 modelsName，解析可能会抛出错误
     let supportedModels = try parseModelsName(modelsName)
-    
+
     // 创建 ModelProvider 实例
     return ModelProvider(
         id: UUID().uuidString, // 生成唯一 ID
@@ -40,26 +41,25 @@ func parseModelsName(_ modelsName: String) throws -> [String] {
     if modelsName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         throw ModelProviderError.emptyModelsName
     }
-    
+
     // 分割字符串并清理多余空格
     let modelsList = modelsName
         .split(separator: ";") // 按分号分割
         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } // 去除空格和换行
         .filter { !$0.isEmpty } // 排除空字符串
-    
+
     // 如果解析后仍然为空，抛出错误
     if modelsList.isEmpty {
         throw ModelProviderError.invalidModelsName(modelsName)
     }
-    
+
     return modelsList
 }
 
 class ProviderManager: ObservableObject {
-    
     static let shared = ProviderManager() // 单例实例
-    
-    @Published var providers: [ModelProvider] = []  // 自动触发视图更新
+
+    @Published var providers: [ModelProvider] = [] // 自动触发视图更新
     private let fileName = "Providers.json"
     private let fileManager = FileManager.default
     private let logger = Logger.shared
@@ -81,7 +81,7 @@ class ProviderManager: ObservableObject {
             let data = try Data(contentsOf: fileURL) // 读取文件内容
             let decodedProviders = try JSONDecoder().decode([ModelProvider].self, from: data)
 //            DispatchQueue.main.async {
-                self.providers = decodedProviders // 更新 providers，触发视图更新
+            providers = decodedProviders // 更新 providers，触发视图更新
 //            }
         } catch {
             logger.log("Failed to load providers: %{public}@", error.localizedDescription, type: .error)
@@ -90,17 +90,17 @@ class ProviderManager: ObservableObject {
 
     // 根据 ID 获取指定的 ModelProvider
     func getProvider(by id: String) -> ModelProvider? {
-        return providers.first { $0.id == id }
+        providers.first { $0.id == id }
     }
-    
+
     func getAllProvider() -> [ModelProvider]? {
-        return providers
+        providers
     }
-    
+
     // 添加条目
     func addProvider(provider: ModelProvider) {
         providers.append(provider) // 添加条目到内存
-        saveProviders()            // 保存到文件
+        saveProviders() // 保存到文件
     }
 
     // 删除条目根据 ID
@@ -108,12 +108,12 @@ class ProviderManager: ObservableObject {
         // 查找符合条件的索引
         if let index = providers.firstIndex(where: { $0.id == id }) {
             providers.remove(at: index) // 从内存中移除
-            saveProviders()             // 保存到文件
+            saveProviders() // 保存到文件
         } else {
             logger.log("Provider with id %{public}@  not found.", id, type: .error)
         }
     }
-    
+
     func deleteProviders(from selectedApps: inout Set<String>) {
         // 遍历 selectedApps 中的所有 ID
         for id in selectedApps {
@@ -125,7 +125,7 @@ class ProviderManager: ObservableObject {
                 logger.log("Provider with id %{public}@  not found.", id, type: .error)
             }
         }
-        
+
         // 清空 selectedApps
         selectedApps.removeAll()
         saveProviders() // 保存到文件
@@ -141,8 +141,14 @@ class ProviderManager: ObservableObject {
             logger.log("Failed to save providers: %{public}@", error.localizedDescription, type: .error)
         }
     }
-    
-    func updateProvider(provider: ModelProvider, newName: String, newBaseURL: String, newApiKey: String, newModels: [String]) {
+
+    func updateProvider(
+        provider: ModelProvider,
+        newName: String,
+        newBaseURL: String,
+        newApiKey: String,
+        newModels: [String]
+    ) {
         if let index = providers.firstIndex(where: { $0.id == provider.id }) {
             providers[index].name = newName
             providers[index].baseURL = newBaseURL
@@ -166,7 +172,7 @@ class ProviderManager: ObservableObject {
     func getSelectedProviderDetails() -> (apiKey: String, baseURL: String)? {
         // 从 UserDefaults 获取已选择的 Provider ID
         let chosenProviderId = UserDefaults.standard.string(forKey: "chosenProviderId") ?? ""
-        
+
         // 查找匹配的 ModelProvider
         guard let selectedProvider = getProvider(by: chosenProviderId) else {
             logger.log("No provider found with id: %{public}@", chosenProviderId, type: .info)

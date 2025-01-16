@@ -8,12 +8,16 @@
 
 /* Begin PBXBuildFile section */
 		FD0DC2512D2E1CC100B1676A /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = FD0DC2502D2E1CC100B1676A /* Yams */; };
+		FD8EDB902D37F77800BE2422 /* .swiftlint.yml in Resources */ = {isa = PBXBuildFile; fileRef = FD8EDB8F2D37F76500BE2422 /* .swiftlint.yml */; };
+		FD8EDB932D37FA3C00BE2422 /* .swiftformat in Resources */ = {isa = PBXBuildFile; fileRef = FD8EDB922D37FA3100BE2422 /* .swiftformat */; };
 		FD8F63162D2E693700C632D7 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = FD8F630D2D2E693700C632D7 /* .gitignore */; };
 		FD8F631A2D2E693700C632D7 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = FD8F63132D2E693700C632D7 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		FD0DC1F62D2E18F300B1676A /* Xpop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Xpop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD8EDB8F2D37F76500BE2422 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftlint.yml; sourceTree = "<group>"; };
+		FD8EDB922D37FA3100BE2422 /* .swiftformat */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftformat; sourceTree = "<group>"; };
 		FD8F630D2D2E693700C632D7 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		FD8F63132D2E693700C632D7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -64,6 +68,8 @@
 		FD0DC1ED2D2E18F300B1676A = {
 			isa = PBXGroup;
 			children = (
+				FD8EDB922D37FA3100BE2422 /* .swiftformat */,
+				FD8EDB8F2D37F76500BE2422 /* .swiftlint.yml */,
 				FD5730392D353DF600384B88 /* Xpop-Extensions */,
 				FD8F630D2D2E693700C632D7 /* .gitignore */,
 				FD8F63132D2E693700C632D7 /* README.md */,
@@ -91,6 +97,8 @@
 				FD0DC1F22D2E18F300B1676A /* Sources */,
 				FD0DC1F32D2E18F300B1676A /* Frameworks */,
 				FD0DC1F42D2E18F300B1676A /* Resources */,
+				FD00B1CF2D38A9270074F93F /* ShellScript */,
+				FD00B1CE2D38A8CC0074F93F /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -151,12 +159,53 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FD8EDB902D37F77800BE2422 /* .swiftlint.yml in Resources */,
 				FD8F63162D2E693700C632D7 /* .gitignore in Resources */,
 				FD8F631A2D2E693700C632D7 /* README.md in Resources */,
+				FD8EDB932D37FA3C00BE2422 /* .swiftformat in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FD00B1CE2D38A8CC0074F93F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]; then\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif which swiftlint > /dev/null; then\n    swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+		};
+		FD00B1CF2D38A9270074F93F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]; then\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif which swiftformat > /dev/null; then\n  swiftformat .\nelse\n  echo \"warning: SwiftFormat not installed, download from https://github.com/nicklockwood/SwiftFormat\"\nfi\n\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		FD0DC1F22D2E18F300B1676A /* Sources */ = {
@@ -300,6 +349,7 @@
 				DEVELOPMENT_TEAM = 83GCPC538F;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Xpop/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -329,6 +379,7 @@
 				DEVELOPMENT_TEAM = 83GCPC538F;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Xpop/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

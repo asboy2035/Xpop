@@ -9,7 +9,7 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     static let shared = AppDelegate()
-    
+
     var window: NSPanel!
     var statusItem: NSStatusItem?
     var settingsWindow: NSWindow?
@@ -18,19 +18,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var forbiddenAppIDs: Set<String>?
     var hideTimer: Timer? // Timer for hiding the window
     var lastMouseLocation: NSPoint?
-    
+
     public let eventMonitor = InputEventMonitor()
     var selectedText: String?
     var lastSelectedText: String?
-    
+
     var statusBarManager: StatusBarManager!
-    
+
     @Published var isExtension: Bool = false // 直接在 AppDelegate 中定义状态
     @Published var extensionObj: Extension?
-    
+
     private let logger = Logger.shared
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         // 1. Request accessibility permission and load forbidden apps list
         requestAccessibilityPermission()
         loadForbiddenApps()
@@ -43,25 +43,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         // 4. Add global mouse event monitors
         setupEventMonitoring()
-        
+
         // DEBUG ONLY! SIMULATE TO INSTALL EXTENSION
-//        let urls = [URL(fileURLWithPath: "/Users/dongqishen/Downloads/openai-translator.xpopext")]
-//        application(NSApplication.shared, open: urls) // should delay for some seconds.
+        //        let urls = [URL(fileURLWithPath: "/Users/dongqishen/Downloads/openai-translator.xpopext")]
+        //        application(NSApplication.shared, open: urls) // should delay for some seconds.
     }
 
-    func application(_ sender: NSApplication, open urls: [URL]) {
+    func application(_: NSApplication, open urls: [URL]) {
         for url in urls {
             do {
                 try ExtensionManager.shared.install(url: url)
                 statusBarManager.showSuccessMessage()
-                logger.log("Install Extension %{public}@ success.", url.lastPathComponent, type: .info)
+                logger.log(
+                    "Install Extension %{public}@ success.",
+                    url.lastPathComponent, type: .info
+                )
             } catch {
                 statusBarManager.showSuccessMessage()
-                logger.log("Install Extension %{public}@ Failed.", url.deletingPathExtension().lastPathComponent , type: .error)
+                logger.log(
+                    "Install Extension %{public}@ Failed.",
+                    url.deletingPathExtension().lastPathComponent, type: .error
+                )
             }
         }
     }
-    
+
     // MARK: - Setup Methods
 
     private func setupMainWindow() {
@@ -69,10 +75,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 300),
             styleMask: [.fullSizeContentView, .nonactivatingPanel],
-            backing: .buffered, defer: false)
+            backing: .buffered, defer: false
+        )
 
-        let hostingView = NSHostingView(rootView: contentView
-            .environmentObject(AppDelegate.shared))
+        let hostingView = NSHostingView(
+            rootView:
+            contentView
+                .environmentObject(AppDelegate.shared)
+        )
         hostingView.autoresizingMask = [.width, .height]
         window.contentView = hostingView
         window.setContentSize(hostingView.fittingSize)
@@ -98,10 +108,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     private func setupStatusBar(eventMonitor: InputEventMonitor) {
         statusBarManager = StatusBarManager(eventMonitor: eventMonitor)
-        statusBarManager.addMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: "", target: self)
-        statusBarManager.addMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "", target: self)
+        statusBarManager.addMenuItem(
+            title: "Settings...", action: #selector(openSettings),
+            keyEquivalent: "", target: self
+        )
+        statusBarManager.addMenuItem(
+            title: "Quit", action: #selector(quitApp), keyEquivalent: "",
+            target: self
+        )
     }
-    
+
     private func setupEventMonitoring() {
         let doubleClick = DoubleClickCombination()
         doubleClick.onTrigger = {
@@ -110,14 +126,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     // 调用异步函数并处理结果
                     self.selectedText = try await self.manager.getSelectedText()
                     await self.showWindow()
-                    self.logger.log("DoubleClick trigger. Selected text: %{public}@", self.selectedText ?? "", type: .debug)
+                    self.logger.log(
+                        "DoubleClick trigger. Selected text: %{public}@",
+                        self.selectedText ?? "", type: .debug
+                    )
                 } catch {
                     await self.hideWindow_new()
-                    self.logger.log("DoubleClick error: %{public}@", error as CVarArg, type: .error)
+                    self.logger.log(
+                        "DoubleClick error: %{public}@", error as CVarArg,
+                        type: .error
+                    )
                 }
             }
         }
-        
+
         let dragAndDrop = DragAndDropCombination(dragThreshold: 3)
         dragAndDrop.onTrigger = {
             Task { // 启动一个异步任务
@@ -125,54 +147,61 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     // 调用异步函数并处理结果
                     self.selectedText = try await self.manager.getSelectedText()
                     await self.showWindow()
-                    self.logger.log("Drag and drop trigger. Selected text: %{public}@", self.selectedText ?? "", type: .debug)
+                    self.logger.log(
+                        "Drag and drop trigger. Selected text: %{public}@",
+                        self.selectedText ?? "", type: .debug
+                    )
                 } catch {
                     await self.hideWindow_new()
-                    self.logger.log("Drag and drop error: %{public}@", error as CVarArg, type: .error)
+                    self.logger.log(
+                        "Drag and drop error: %{public}@", error as CVarArg,
+                        type: .error
+                    )
                 }
             }
         }
-        
+
         let scrollCombination = ScrollCombination()
         scrollCombination.onTrigger = {
             self.hideWindowWithAnimation()
         }
-        
-        
+
         eventMonitor.addCombination(doubleClick)
         eventMonitor.addCombination(dragAndDrop)
         eventMonitor.addCombination(scrollCombination)
-        eventMonitor.addCombination(CustomInputEventHandler { event in
-            switch event {
-            case .mouseDown(_):
-                Task { @MainActor in
-                    self.hideWindow_new()
+        eventMonitor.addCombination(
+            CustomInputEventHandler { event in
+                switch event {
+                case .mouseDown:
+                    Task { @MainActor in
+                        self.hideWindow_new()
+                    }
+                case .mouseDragged:
+                    Task { @MainActor in
+                        self.hideWindow_new()
+                    }
+                case .mouseUp:
+                    break
+                case .scrollWheel:
+                    Task { @MainActor in
+                        self.hideWindow_new()
+                    }
+                case .mouseMoved:
+                    Task { @MainActor in
+                        self.handleMouseMoved()
+                    }
+                case .keyDown:
+                    Task { @MainActor in
+                        self.hideWindow_new()
+                    }
+                case .keyUp:
+                    Task { @MainActor in
+                        self.hideWindow_new()
+                    }
                 }
-            case .mouseDragged(_):
-                Task { @MainActor in
-                    self.hideWindow_new()
-                }
-            case .mouseUp(_):
-                break
-            case .scrollWheel:
-                Task { @MainActor in
-                    self.hideWindow_new()
-                }
-            case .mouseMoved(_):
-                Task { @MainActor in
-                    self.handleMouseMoved()
-                }
-            case .keyDown(_):
-                Task { @MainActor in
-                    self.hideWindow_new()
-                }
-            case .keyUp(_):
-                Task { @MainActor in
-                    self.hideWindow_new()
-                }
+                return false
             }
-            return false
-        })
+        )
     }
 
     private func handleMouseMoved() {
@@ -184,23 +213,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             startHideTimer()
         }
     }
-    
+
     @MainActor private func handleScrollWheelEvent(_ event: NSEvent) {
         guard let panel = window, panel.isVisible else { return }
-        
+
         // Check for a significant upward scroll (simulating a swipe up gesture)
         if event.deltaY > 10 {
-             let currentMouseLocation = NSEvent.mouseLocation
-             if let lastLocation = self.lastMouseLocation {
-                 if abs(currentMouseLocation.x - lastLocation.x) < 10 {
+            let currentMouseLocation = NSEvent.mouseLocation
+            if let lastLocation = lastMouseLocation {
+                if abs(currentMouseLocation.x - lastLocation.x) < 10 {
                     hideWindow_new()
-                 }
-             }
-             self.lastMouseLocation = currentMouseLocation
+                }
+            }
+            lastMouseLocation = currentMouseLocation
         }
         // If it's not a significant up scroll, reset the last mouse location
         else {
-            self.lastMouseLocation = nil
+            lastMouseLocation = nil
         }
     }
 
@@ -240,7 +269,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             panel.orderOut(nil)
         }
     }
-    
+
     private func isSelectedTextValid() -> Bool {
         guard let currentText = selectedText, !currentText.isEmpty else {
             return false
@@ -250,7 +279,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         return false
     }
-    
+
     @MainActor
     private func showWindow() {
         if !isSelectedTextValid() {
@@ -276,7 +305,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 window.setContentSize(contentSize)
                 // 在设置 contentSize 之后获取 window.frame.size
                 let windowSize = window.frame.size
-                let newOrigin = NSPoint(x: mouseLocation!.x - windowSize.width / 2, y: mouseLocation!.y + 10)
+                let newOrigin = NSPoint(
+                    x: mouseLocation!.x - windowSize.width / 2,
+                    y: mouseLocation!.y + 10
+                )
                 window.setFrameOrigin(newOrigin)
             }
             window.orderFront(nil)
@@ -287,23 +319,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     public func hideWindow_new() {
         window.orderOut(nil)
     }
-    
+
     // MARK: - Helper Methods
 
     private func requestAccessibilityPermission() {
-        let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
+        let options =
+            [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true]
+                as CFDictionary
         if !AXIsProcessTrustedWithOptions(options) {
-            logger.log("Request accessibility Permission: %{public}@", TextSelectionError.accessibilityPermissionDenied.description(), type: .error)
+            logger.log(
+                "Request accessibility Permission: %{public}@",
+                TextSelectionError.accessibilityPermissionDenied.description(),
+                type: .error
+            )
         }
     }
 
     private func loadForbiddenApps() {
-        if let savedData = UserDefaults.standard.array(forKey: "forbiddenApps") as? [[String: String]] {
-            forbiddenAppIDs = Set(savedData.compactMap { $0["bundleIdentifier"] })
+        if let savedData = UserDefaults.standard.array(forKey: "forbiddenApps")
+            as? [[String: String]] {
+            forbiddenAppIDs = Set(
+                savedData.compactMap { $0["bundleIdentifier"] }
+            )
         }
     }
 
     // MARK: - Menu Actions
+
     @objc func openSettings() {
         if let window = settingsWindow {
             window.makeKeyAndOrderFront(nil)
@@ -317,13 +359,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let settingsWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 600),
             styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
-            backing: .buffered, defer: false)
+            backing: .buffered, defer: false
+        )
 
-        settingsWindow.contentView = NSHostingView(rootView: SettingView()
-            .environmentObject(ProviderManager.shared)
-            .environmentObject(SettingsManager.shared)
-            .environmentObject(ExtensionManager.shared)
-            .environmentObject(LanguageManager.shared))
+        settingsWindow.contentView = NSHostingView(
+            rootView: SettingView()
+                .environmentObject(ProviderManager.shared)
+                .environmentObject(SettingsManager.shared)
+                .environmentObject(ExtensionManager.shared)
+                .environmentObject(LanguageManager.shared)
+        )
 
         settingsWindow.titlebarAppearsTransparent = true
         settingsWindow.isReleasedWhenClosed = false
@@ -346,6 +391,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     // MARK: - NSWindow Notifications
+
     @objc private func hideWindow() {
         window.orderOut(nil)
     }

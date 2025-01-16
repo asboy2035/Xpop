@@ -13,12 +13,12 @@ class StatusBarManager: NSObject {
     private var enableSwitch: NSSwitch?
     private var enableMenuItem: NSMenuItem?
     private var menu: NSMenu?
-    
+
     private var infoPopover: NSPopover?
     private var timer: Timer?
-    
+
     private var eventMonitor: InputEventMonitor?
-    
+
     private let logger = Logger.shared
 
     private let userDefaultsKey = "isXpopEnabled"
@@ -37,7 +37,7 @@ class StatusBarManager: NSObject {
     }
 
     init(eventMonitor: InputEventMonitor) {
-        self.isEnabled = UserDefaults.standard.bool(forKey: userDefaultsKey)
+        isEnabled = UserDefaults.standard.bool(forKey: userDefaultsKey)
         self.eventMonitor = eventMonitor
 
         if isEnabled {
@@ -48,13 +48,18 @@ class StatusBarManager: NSObject {
         // 监听 effectiveAppearance 的变化
         NSApp.addObserver(self, forKeyPath: "effectiveAppearance", options: .new, context: nil)
     }
-    
+
     deinit {
         // 移除监听
         NSApp.removeObserver(self, forKeyPath: "effectiveAppearance")
-    }
+    }    
     
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    override func observeValue(
+        forKeyPath keyPath: String?,
+        of _: Any?,
+        change _: [NSKeyValueChangeKey: Any]?,
+        context _: UnsafeMutableRawPointer?
+    ) {
         if keyPath == "effectiveAppearance" {
             // 当 effectiveAppearance 变化时，更新菜单外观
             updateMenuAppearance()
@@ -70,27 +75,26 @@ class StatusBarManager: NSObject {
                 button.image = appIcon
                 button.alphaValue = isEnabled ? 1.0 : 0.4
             }
-            
+
             // 设置按钮的目标动作
             button.target = self
             button.action = #selector(statusBarButtonClicked(_:))
-            
+
             // 移除默认的菜单行为
             statusItem?.menu = nil
         }
-        
+
         // 创建菜单但不立即绑定到状态栏
         buildMenu()
     }
-    
+
     @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
         NSApp.activate(ignoringOtherApps: true)
-        
+
         // 显示菜单
         if let menu = menu {
             let point = NSPoint(x: 0, y: NSStatusBar.system.thickness)
             menu.popUp(positioning: nil, at: point, in: sender)
-            
         }
     }
 
@@ -113,7 +117,7 @@ class StatusBarManager: NSObject {
             menu.appearance = NSApp.effectiveAppearance
         }
     }
-    
+
     private func createEnableMenuItem() -> NSMenuItem {
         let enableView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 30))
 
@@ -121,7 +125,6 @@ class StatusBarManager: NSObject {
         enableLabel.frame = NSRect(x: 12, y: 5, width: 80, height: 18)
         enableLabel.font = NSFont.boldSystemFont(ofSize: 14)
         enableView.addSubview(enableLabel)
-
 
         enableSwitch = NSSwitch()
         enableSwitch?.frame = NSRect(x: 140, y: 5, width: 60, height: 18)
@@ -131,7 +134,7 @@ class StatusBarManager: NSObject {
         enableSwitch?.state = isEnabled ? .on : .off
         enableSwitch?.action = #selector(enableSwitchChanged(_:))
         enableView.addSubview(enableSwitch!)
-        
+
         let menuItem = NSMenuItem()
         menuItem.view = enableView
         menuItem.isEnabled = true
@@ -154,34 +157,37 @@ class StatusBarManager: NSObject {
             logger.log("Xpop is OFF.", type: .debug)
         }
     }
-    
-    
+
     func showSuccessMessage() {
         showMessage(imageName: "checkmark.circle.fill", color: .green, message: "插件安装成功")
     }
-    
+
     func showFailureMessage() {
         showMessage(imageName: "xmark.circle.fill", color: .red, message: "插件安装失败")
     }
-    
+
     private func showMessage(imageName: String, color: Color, message: String) {
         guard let statusItem = statusItem, let button = statusItem.button else { return }
-        
+
         let popover = NSPopover()
         popover.contentSize = NSSize(width: 200, height: 60)
         popover.behavior = .transient
-        
-        let hostingController = NSHostingController(rootView: PopoverContentView(imageName: imageName, color: color, message: message))
+
+        let hostingController = NSHostingController(rootView: PopoverContentView(
+            imageName: imageName,
+            color: color,
+            message: message
+        ))
         popover.contentViewController = hostingController
 
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        self.infoPopover = popover
-        
+        infoPopover = popover
+
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { _ in
             self.hidePopover()
         }
     }
-    
+
     private func hidePopover() {
         infoPopover?.close()
         infoPopover = nil
