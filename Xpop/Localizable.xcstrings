@@ -360,6 +360,9 @@
         }
       }
     },
+    "Setting for %@" : {
+
+    },
     "Settings" : {
       "localizations" : {
         "zh-Hans" : {

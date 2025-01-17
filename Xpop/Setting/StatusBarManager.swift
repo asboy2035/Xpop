@@ -52,7 +52,7 @@ class StatusBarManager: NSObject {
     deinit {
         // 移除监听
         NSApp.removeObserver(self, forKeyPath: "effectiveAppearance")
-    }    
+    }
 
     override func observeValue(
         forKeyPath keyPath: String?,

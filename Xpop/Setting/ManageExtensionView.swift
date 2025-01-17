@@ -1,5 +1,5 @@
 //
-//  ManageExtensions.swift
+//  ManageExtensionView.swift
 //  Xpop
 //
 //  Created by Dongqi Shen on 2025/1/8.
@@ -77,7 +77,6 @@ struct ExtensionRow: View {
 }
 
 // MARK: - 自定义 macOS 风格的勾选框样式
-
 struct MacCheckboxToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack {
@@ -99,9 +98,12 @@ struct MacCheckboxToggleStyle: ToggleStyle {
 struct ExtensionManagerView: View {
     @StateObject var extManager = ExtensionManager.shared
     @State private var isEditing = false
-    @State private var selectedPluginForSettings: Extension?
-    @State private var showOtherView = false
+    @State private var selectedPluginForSetting: Extension?
+    @State private var selectedPluginForSettingIdentifer: String?
+    @State private var showSettingView = false
 
+    @State private var optionValues: [[String: String]]?
+    
     @Environment(\.locale) var locale
 
     var body: some View {
@@ -137,7 +139,9 @@ struct ExtensionManagerView: View {
                                     extManager.deleteExtension(extensionName: ext.name)
                                 },
                                 onSettings: {
-                                    selectedPluginForSettings = extManager.getExtensionByName(name: ext.name)
+                                    selectedPluginForSetting = extManager.getExtensionByName(name: ext.name)
+                                    selectedPluginForSettingIdentifer = ext.name
+                                    optionValues = setOptions()
                                 }
                             )
                             .listRowInsets(EdgeInsets())
@@ -165,6 +169,49 @@ struct ExtensionManagerView: View {
             .padding(.leading, 30)
             .padding(.bottom, 10)
         }
+        .sheet(isPresented: Binding<Bool>(
+            get: {
+                selectedPluginForSetting != nil && selectedPluginForSetting?.options != nil
+            },
+            set: { _ in
+                selectedPluginForSetting = nil
+            }
+        )) {
+            PluginConfigurationView(name: selectedPluginForSetting!.name, identifier: selectedPluginForSettingIdentifer, options: selectedPluginForSetting!.options!, optionValues: optionValues!)
+        }
+    }
+    
+    private func setOptions() -> [[String: String]]? {
+        // 检查 selectedPluginForSetting.options 是否为 nil
+        guard let options = selectedPluginForSetting?.options else {
+            return nil
+        }
+        
+        let key = "\(selectedPluginForSettingIdentifer!)-options"
+        // 如果 UserDefaults 中已经存在该 key，并且数组不为空，直接返回已保存的 optionValues
+        if let savedOptionValues = UserDefaults.standard.array(forKey: key) as? [[String: String]], !savedOptionValues.isEmpty {
+            return savedOptionValues
+        }
+        
+        // 如果找不到保存的选项或选项为空，使用默认逻辑初始化 optionValues
+        let optionValues = selectedPluginForSetting!.options!.map { option in
+            var value: String = ""
+            if let defaultValue = option.defaultValue {
+                value = defaultValue
+            } else if let firstValue = option.values?.first {
+                value = firstValue
+            }
+            return [
+                "type": String(option.type),
+                "label": String(option.label),
+                "value": String(value)
+            ] as [String: String]
+        }
+        // 将初始化后的 optionValues 保存到 UserDefaults 中
+        UserDefaults.standard.set(optionValues, forKey: key)
+        
+        // 返回初始化后的 optionValues
+        return optionValues
     }
 }
 
