@@ -1,12 +1,13 @@
 <p align="center">
-  <!-- 浅色模式图片 -->
-  <source srcset="Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png" media="(prefers-color-scheme: light)">
-  <!-- 深色模式图片 -->
-  <source srcset="Xpop/Assets.xcassets/AppIcon-White.appiconset/solar--cursor-square-linear-256x256.png" media="(prefers-color-scheme: dark)">
-  <!-- 默认图片（显式回退） -->
-  <source srcset="Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png" media="all">
-  <!-- 最终默认图片 -->
-  <img src = "Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png">
+  <picture>
+    <!-- 深色模式图片 -->
+    <source srcset="Xpop/Assets.xcassets/AppIcon-White.appiconset/solar--cursor-square-linear-256x256.png" media="(prefers-color-scheme: dark)">
+    <!-- 浅色模式图片 -->
+    <source srcset="Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png" media="(prefers-color-scheme: light)">
+    <!-- 默认图片 -->
+    <img src="Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png" alt="App Icon">
+  </picture>
+</p>
 <h1 align="center">Xpop</h1>
 <h4 align="center">An open-source text selection tool for macOS, a PopClip alternative.</h4>
 
