@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Yams
 
-class Extension: Identifiable {
+class Extension: Identifiable, Codable {
     // MARK: - Required Properties
 
     let name: String?
@@ -18,26 +18,24 @@ class Extension: Identifiable {
 
     var icon: String?
     var identifier: String?
-    var description: LocalizedStringKey?
+    var description: String? // 改为 String 类型
     var macosVersion: String?
     var popclipVersion: Int?
 
     var entitlements: [String]?
-    var action: [String: Any]?
-
+    var action: [String: String]? // 改为 [String: String] 类型
     var url: String?
     var keyCombo: String?
     var keyCombos: [String]?
     var shortcutName: String?
     var serviceName: String?
     var shellScript: String?
-    var shellScriptFile: String? // 新增：表示 shell 脚本文件的路径
+    var shellScriptFile: String?
     var interpreter: String?
-    
+
     var options: [Option]?
 
-    var folderName: String? // 唯一识别符，含有随机生成字符串
-
+    var folderName: String?
     var buintinType: String?
 
     // MARK: - Plugin State
@@ -45,11 +43,10 @@ class Extension: Identifiable {
     var isEnabled: Bool = false
 
     var localizedName: String {
-        NSLocalizedString(name!, comment: "")
+        NSLocalizedString(name ?? "", comment: "")
     }
 
     let logger = Logger.shared
-
     let ssExecutor = ShellScriptExecutor.shared
 
     // MARK: - Initializer
@@ -57,46 +54,28 @@ class Extension: Identifiable {
     init(name: String?,
          icon: String? = nil,
          identifier: String? = nil,
-         description: LocalizedStringKey? = nil,
+         description: String? = nil, // 改为 String 类型
          macosVersion: String? = nil,
          popclipVersion: Int? = nil,
          entitlements: [String]? = nil,
-         action: [String: Any]? = nil,
+         action: [String: String]? = nil, // 改为 [String: String] 类型
          url: String? = nil,
          keyCombo: String? = nil,
          keyCombos: [String]? = nil,
          shortcutName: String? = nil,
          serviceName: String? = nil,
          shellScript: String? = nil,
-         shellScriptFile: String? = nil, // 新增：初始化 shellScriptFile
+         shellScriptFile: String? = nil,
          interpreter: String? = nil,
          options: [Option]? = nil,
-         isEnabled _: Bool = false,
+         isEnabled: Bool = false,
          builtinType: String? = nil) {
-        // Required property
         self.name = name
-
-        // 当 icon 为空时，使用 name 来赋值 icon
-        if let name = name, icon == nil {
-            let words = name.components(separatedBy: " ")
-            if words.count > 1 {
-                // 如果 name 有多个单词，取前三个单词的首字母并大写
-                let initials = words.prefix(3).map { String($0.first!).uppercased() }
-                self.icon = initials.joined()
-            } else {
-                // 如果 name 只有一个单词，取前8个字符
-                self.icon = String(name.prefix(8))
-            }
-        } else {
-            self.icon = icon
-        }
-
-        // Optional properties
+        self.icon = icon
         self.identifier = identifier
         self.description = description
         self.macosVersion = macosVersion
         self.popclipVersion = popclipVersion
-        self.options = options
         self.entitlements = entitlements
         self.action = action
         self.url = url
@@ -104,22 +83,63 @@ class Extension: Identifiable {
         self.keyCombos = keyCombos
         self.shortcutName = shortcutName
         self.serviceName = serviceName
-
-        buintinType = builtinType
-
-        // 处理脚本字段
-        if let action = action {
-            // 如果 action 存在，优先从 action 中提取脚本字段
-            self.shellScript = action["shellscript"] as? String ?? shellScript
-            self.shellScriptFile = action["shell script file"] as? String ?? shellScriptFile
-            self.interpreter = action["interpreter"] as? String ?? interpreter
-        } else {
-            // 如果 action 不存在，直接从最外层的字段中提取
-            self.shellScript = shellScript
-            self.shellScriptFile = shellScriptFile
-            self.interpreter = interpreter
-        }
+        self.shellScript = shellScript
+        self.shellScriptFile = shellScriptFile
+        self.interpreter = interpreter
+        self.options = options
+        self.buintinType = builtinType
+        self.isEnabled = isEnabled
     }
+
+    // MARK: - Codable Implementation
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case icon
+        case identifier
+        case description
+        case macosVersion
+        case popclipVersion
+        case entitlements
+        case action
+        case url
+        case keyCombo
+        case keyCombos
+        case shortcutName
+        case serviceName
+        case shellScript
+        case shellScriptFile
+        case interpreter
+        case options
+        case folderName
+        case buintinType
+        case isEnabled
+    }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        icon = try container.decodeIfPresent(String.self, forKey: .icon)
+        identifier = try container.decodeIfPresent(String.self, forKey: .identifier)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        macosVersion = try container.decodeIfPresent(String.self, forKey: .macosVersion)
+        popclipVersion = try container.decodeIfPresent(Int.self, forKey: .popclipVersion)
+        entitlements = try container.decodeIfPresent([String].self, forKey: .entitlements)
+        action = try container.decodeIfPresent([String: String].self, forKey: .action)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        keyCombo = try container.decodeIfPresent(String.self, forKey: .keyCombo)
+        keyCombos = try container.decodeIfPresent([String].self, forKey: .keyCombos)
+        shortcutName = try container.decodeIfPresent(String.self, forKey: .shortcutName)
+        serviceName = try container.decodeIfPresent(String.self, forKey: .serviceName)
+        shellScript = try container.decodeIfPresent(String.self, forKey: .shellScript)
+        shellScriptFile = try container.decodeIfPresent(String.self, forKey: .shellScriptFile)
+        interpreter = try container.decodeIfPresent(String.self, forKey: .interpreter)
+        options = try container.decodeIfPresent([Option].self, forKey: .options)
+        folderName = try container.decodeIfPresent(String.self, forKey: .folderName)
+        buintinType = try container.decodeIfPresent(String.self, forKey: .buintinType)
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+    }
+
 
     // MARK: - 判断 action 类型
 
@@ -185,7 +205,7 @@ class Extension: Identifiable {
                 }
             }
         }
-        
+
         // 检查 URL 是否有效
         guard let urlObject = URL(string: formattedURL) else {
             print("Invalid URL: \(formattedURL)")
@@ -250,73 +270,12 @@ class Extension: Identifiable {
     }
 
     // MARK: - 将插件信息转换为 YAML 字符串
+    // MARK: - YAML Conversion
 
     func toYAML() throws -> String {
-        var yamlDict = [String: Any]()
-
-        // 添加必填字段
-        if let name = name {
-            yamlDict["name"] = name
-        }
-
-        // 添加可选字段
-        if let icon = icon {
-            yamlDict["icon"] = icon
-        }
-        if let identifier = identifier {
-            yamlDict["identifier"] = identifier
-        }
-        if let description = description {
-            yamlDict["description"] = String(describing: description)
-        }
-        if let macosVersion = macosVersion {
-            yamlDict["macos version"] = macosVersion
-        }
-        if let popclipVersion = popclipVersion {
-            yamlDict["popclip version"] = popclipVersion
-        }
-        if let options = options {
-            yamlDict["options"] = options
-        }
-        if let entitlements = entitlements {
-            yamlDict["entitlements"] = entitlements
-        }
-        if let action = action {
-            yamlDict["action"] = action
-        }
-        if let url = url {
-            yamlDict["url"] = url
-        }
-        if let keyCombo = keyCombo {
-            yamlDict["key combo"] = keyCombo
-        }
-        if let keyCombos = keyCombos {
-            yamlDict["key combos"] = keyCombos
-        }
-        if let shortcutName = shortcutName {
-            yamlDict["shortcut name"] = shortcutName
-        }
-        if let serviceName = serviceName {
-            yamlDict["service name"] = serviceName
-        }
-        if let shellScript = shellScript {
-            yamlDict["shell script"] = shellScript
-        }
-        if let shellScriptFile = shellScriptFile { // 新增：添加 shellScriptFile 到 YAML
-            yamlDict["shell script file"] = shellScriptFile
-        }
-        if let interpreter = interpreter {
-            yamlDict["interpreter"] = interpreter
-        }
-
-        // 将字典转换为 YAML 字符串
-        do {
-            let yamlString = try Yams.dump(object: yamlDict)
-            // 在 YAML 字符串前添加 #popclip 注释
-            return "#xpop\n" + yamlString
-        } catch {
-            throw ExtensionError.invalidYAML("Failed to convert to YAML: \(error)")
-        }
+        let encoder = YAMLEncoder()
+        let yamlString = try encoder.encode(self)
+        return "#xpop\n" + yamlString
     }
 
     // MARK: - 错误类型
@@ -348,32 +307,32 @@ struct ExtensionItem: Identifiable, Decodable, Encodable {
     var isEnabled: Bool
 }
 
-class Option {
+class Option: Codable {
     /// The type of the option. See `OptionType` for possible values.
     let type: String
 
     /// The label to appear in the UI for this option.
     var label: String
-    
+
     /// A longer description to appear in the UI to explain this option.
     var description: String?
-    
+
     /// The default value of the option.
     /// - For string options, defaults to an empty string if omitted.
     /// - For boolean options, defaults to `true` if omitted.
     /// - For multiple options, defaults to the top item in the list if omitted.
     /// - A password field may not have a default value.
     var defaultValue: String?
-    
+
     /// Array of strings representing the possible values for the multiple choice option.
     /// Required if the option type is `multiple`.
     var values: [String]?
-    
+
     /// Array of "human friendly" strings corresponding to the multiple choice values.
     /// This is used only in the UI and is not passed to the script.
     /// If omitted, the option values themselves are shown.
     var valueLabels: [String]?
-    
+
     // MARK: - Initializer
     /// Initializes an `Option` with required and optional properties.
     /// - Parameters:
@@ -391,7 +350,7 @@ class Option {
         values: [String]? = nil,
         valueLabels: [String]? = nil
     ) {
-        self.type = type
+        self.type = type.lowercased()
         self.label = label
         self.description = description
         self.defaultValue = defaultValue

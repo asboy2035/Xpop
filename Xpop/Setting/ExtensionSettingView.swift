@@ -13,9 +13,9 @@ struct PluginConfigurationView: View {
     private var options: [Option]
     @State private var contentHeight: CGFloat = 0
     @State private var optionValues: [[String: String]]
-    
+
     @Environment(\.dismiss) var dismiss
-    
+
     init(name: String!, identifier: String!, options: [Option], optionValues: [[String: String]]) {
         self.name = name
         self.identifier = identifier
@@ -23,15 +23,15 @@ struct PluginConfigurationView: View {
         // 初始化 optionValues，但这仍然是一个空数组，初始化时不会对其做修改
         self._optionValues = State(initialValue: optionValues)
     }
-    
+
     var body: some View {
         VStack {
             Text("Setting for \(name)")
                 .font(.title)
                 .fontWeight(.bold)
                 .padding(.top, 8)
-            
-            GeometryReader { geometry in
+
+            GeometryReader { _ in
                 ScrollView {
                     VStack {
                         ForEach(options.indices, id: \.self) { index in
@@ -40,7 +40,7 @@ struct PluginConfigurationView: View {
                                     optionValue: Binding<[String: String]>(
                                         get: { optionValues[index] },
                                         set: { newValue in
-                                            optionValues[index] = newValue 
+                                            optionValues[index] = newValue
                                         }
                                     ),
                                     option: options[index]
@@ -80,17 +80,17 @@ struct PluginConfigurationView: View {
             loadOptions() // 在视图呈现之前加载选项
         }
     }
-    
+
     private func saveOptions() {
         UserDefaults.standard.set(optionValues, forKey: "\(identifier!)-options")
     }
-    
+
     private func loadOptions() {
         // 这里可以确保在视图加载之前初始化 optionValues
         if let savedOptions = UserDefaults.standard.array(forKey: "\(identifier!)-options") as? [[String: String]] {
             optionValues = savedOptions
         }
-        
+
         if optionValues.isEmpty {
             optionValues = options.map { option in
                 var value: String = ""
@@ -102,7 +102,7 @@ struct PluginConfigurationView: View {
                 return [
                     "type": option.type,
                     "label": option.label,
-                    "value": value
+                    "value": value,
                 ]
             }
         }
@@ -112,18 +112,17 @@ struct PluginConfigurationView: View {
 struct OptionView: View {
     @Binding var optionValue: [String: String]
     var option: Option
-    
+
     // 初始化方法
     init(optionValue: Binding<[String: String]>, option: Option) {
         self._optionValue = optionValue
-        print("optionValue: \(optionValue)")
         self.option = option
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             switch option.type {
-            case "String":
+            case "string":
                 VStack(alignment: .leading, spacing: 4) {
                     Text(option.label)
                         .padding(.leading, 16)
@@ -152,9 +151,9 @@ struct OptionView: View {
                 HStack {
                     Text(option.label)
                         .padding(.leading, 16)
-                    
+
                     Spacer()
-                    
+
 //                    if let selectedValue = optionValue as? String {
 //                        Picker("", selection: Binding<String>(
 //                            get: { selectedValue },

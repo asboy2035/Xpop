@@ -103,7 +103,7 @@ struct ExtensionManagerView: View {
     @State private var showSettingView = false
 
     @State private var optionValues: [[String: String]]?
-    
+
     @Environment(\.locale) var locale
 
     var body: some View {
@@ -180,19 +180,19 @@ struct ExtensionManagerView: View {
             PluginConfigurationView(name: selectedPluginForSetting!.name, identifier: selectedPluginForSettingIdentifer, options: selectedPluginForSetting!.options!, optionValues: optionValues!)
         }
     }
-    
+
     private func setOptions() -> [[String: String]]? {
         // 检查 selectedPluginForSetting.options 是否为 nil
         guard let options = selectedPluginForSetting?.options else {
             return nil
         }
-        
+
         let key = "\(selectedPluginForSettingIdentifer!)-options"
         // 如果 UserDefaults 中已经存在该 key，并且数组不为空，直接返回已保存的 optionValues
         if let savedOptionValues = UserDefaults.standard.array(forKey: key) as? [[String: String]], !savedOptionValues.isEmpty {
             return savedOptionValues
         }
-        
+
         // 如果找不到保存的选项或选项为空，使用默认逻辑初始化 optionValues
         let optionValues = selectedPluginForSetting!.options!.map { option in
             var value: String = ""
@@ -204,12 +204,12 @@ struct ExtensionManagerView: View {
             return [
                 "type": String(option.type),
                 "label": String(option.label),
-                "value": String(value)
+                "value": String(value),
             ] as [String: String]
         }
         // 将初始化后的 optionValues 保存到 UserDefaults 中
         UserDefaults.standard.set(optionValues, forKey: key)
-        
+
         // 返回初始化后的 optionValues
         return optionValues
     }

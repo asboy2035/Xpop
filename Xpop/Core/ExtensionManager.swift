@@ -40,12 +40,7 @@ class ExtensionManager: ObservableObject {
             icon: "symbol:magnifyingglass",
             url: "https://www.google.com/search?q={xpop text}"
         )
-//        let searchExtension = Extension(
-//            name: "Search",
-//            icon: "symbol:magnifyingglass",
-//            url: "https://{popclip option subdomain}.wiktionary.org/wiki/{popclip text}",
-//            options: [Option(type: "String", label: "subdomain", defaultValue: "en")]
-//        )
+
         let searchExtensionItem = ExtensionItem(
             name: "_XPOP_BUILDIN_SEARCH",
             isEnabled: true
@@ -358,11 +353,11 @@ class ExtensionManager: ObservableObject {
             name: yamlDict["name"] as? String,
             icon: yamlDict["icon"] as? String,
             identifier: yamlDict["identifier"] as? String,
-            description: (yamlDict["description"] as? String).map { LocalizedStringKey($0) },
+            description: yamlDict["description"] as? String,
             macosVersion: yamlDict["macos version"] as? String,
             popclipVersion: yamlDict["popclip version"] as? Int,
             entitlements: yamlDict["entitlements"] as? [String],
-            action: yamlDict["action"] as? [String: Any],
+            action: yamlDict["action"] as? [String: String],
             url: yamlDict["url"] as? String,
             keyCombo: yamlDict["key combo"] as? String,
             keyCombos: yamlDict["key combos"] as? [String],
@@ -411,6 +406,7 @@ class ExtensionManager: ObservableObject {
         for existingDirectory in existingPluginDirectories {
             if existingDirectory.hasPrefix("\(sanitizedName)."), existingDirectory.hasSuffix(".xpopext") {
                 // 删除已存在的同名插件
+                removeExtension(foldName: existingDirectory)
                 let existingPluginDirectory = extensionsDirectory.appendingPathComponent(existingDirectory)
                 try FileManager.default.removeItem(at: existingPluginDirectory)
                 logger.log("Removed existing plugin at: %{public}@", existingPluginDirectory.path, type: .info)
@@ -419,18 +415,14 @@ class ExtensionManager: ObservableObject {
 
         // 创建插件文件夹
         try FileManager.default.createDirectory(at: pluginDirectory, withIntermediateDirectories: true, attributes: nil)
-
         // 将插件信息转换为 YAML 字符串
         let yamlString = try ext.toYAML()
-
         // 写入 Config.yaml 文件
         let configFilePath = pluginDirectory.appendingPathComponent("Config.yaml")
         try yamlString.write(to: configFilePath, atomically: true, encoding: .utf8)
-
         // 重新加载插件
         loadExtensions()
         loadExtensionList()
-
         return folderName // 返回文件的目录
     }
 
