@@ -21,6 +21,7 @@
 > This project is under active development and may have bugs. Inspired by PopClip, I’m building an open-source alternative with plans to fully support its plugin system (currently limited). As this is my first Swift project, the code will evolve as I learn and improve. Feedback is welcome!
 
 
+
 ## Popclip Extensions Compatibility
 > [!IMPORTANT]
 > PopClip's plugin system is highly sophisticated and powerful. Achieving full compatibility with it will be a lengthy process. My priority is to implement basic functionality first. Feedback is welcome, and I will prioritize feature requests for future development.
@@ -32,9 +33,27 @@
 3. Do not support local icons.
 
 ### Actions
-#### Open URL actions
-1. Support URL scheme.
-2. Only support `url` property, do not support `options` yet.
+
+### Open URL actions
+
+#### Google Search
+```yaml
+# xpop
+name: Google
+icon: symbol:magnifyingglass
+url: https://www.google.com/search?q={xpop text}
+```
+
+#### Use of option parameter
+```yaml
+# xpop Wiktionary search with subdomain option
+name: Wiktionary
+url: https://{xpop option subdomain}.wiktionary.org/wiki/{xpop text}
+options:
+- type: string
+  label: subdomain
+  defaultValue: en
+```
 
 ## Acknowledgement
 
