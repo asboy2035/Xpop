@@ -60,7 +60,7 @@ class ExtensionManager: ObservableObject {
         // Copy
         let copyExtension = Extension(
             name: "Copy",
-            icon: "symbol:document.on.document",
+//            icon: "symbol:document.on.document",
             builtinType: "_buildin"
         )
         let copyExtensionItem = ExtensionItem(
@@ -71,7 +71,7 @@ class ExtensionManager: ObservableObject {
         // Cut
         let cutExtension = Extension(
             name: "Cut",
-            icon: "symbol:scissors",
+//            icon: "symbol:scissors",
             builtinType: "_buildin"
         )
         let cutExtensionItem = ExtensionItem(
@@ -82,7 +82,7 @@ class ExtensionManager: ObservableObject {
         // Paste
         let pasteExtension = Extension(
             name: "Paste",
-            icon: "symbol:document.on.clipboard",
+//            icon: "symbol:document.on.clipboard",
             builtinType: "_buildin"
         )
         let pasteExtensionItem = ExtensionItem(
