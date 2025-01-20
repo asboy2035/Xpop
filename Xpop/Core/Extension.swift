@@ -83,12 +83,21 @@ class Extension: Identifiable, Codable {
         self.keyCombos = keyCombos
         self.shortcutName = shortcutName
         self.serviceName = serviceName
-        self.shellScript = shellScript
-        self.shellScriptFile = shellScriptFile
-        self.interpreter = interpreter
         self.options = options
         self.buintinType = builtinType
         self.isEnabled = isEnabled
+
+        if let action = action {
+            // 如果 action 存在，优先从 action 中提取脚本字段
+            self.shellScript = action["shellscript"] ?? shellScript
+            self.shellScriptFile = action["shell script file"] ?? shellScriptFile
+            self.interpreter = action["interpreter"] ?? interpreter
+        } else {
+            // 如果 action 不存在，直接从最外层的字段中提取
+            self.shellScript = shellScript
+            self.shellScriptFile = shellScriptFile
+            self.interpreter = interpreter
+        }
     }
 
     // MARK: - Codable Implementation
@@ -139,7 +148,6 @@ class Extension: Identifiable, Codable {
         buintinType = try container.decodeIfPresent(String.self, forKey: .buintinType)
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
     }
-
 
     // MARK: - 判断 action 类型
 
@@ -269,7 +277,6 @@ class Extension: Identifiable, Codable {
         }
     }
 
-    // MARK: - 将插件信息转换为 YAML 字符串
     // MARK: - YAML Conversion
 
     func toYAML() throws -> String {
