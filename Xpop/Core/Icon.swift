@@ -27,6 +27,10 @@ struct CustomImage: View {
         for component in components {
             if component.hasPrefix("symbol:") {
                 modifiers["symbol"] = String(component.dropFirst("symbol:".count))
+            } else if component.hasPrefix("iconify:") {
+                // 处理 iconify 格式
+                let iconifyValue = String(component.dropFirst("iconify:".count))
+                modifiers["iconify"] = iconifyValue
             } else if component.contains("=") {
                 let parts = component.components(separatedBy: "=")
                 modifiers[parts[0]] = parts[1]
@@ -54,10 +58,18 @@ struct CustomImage: View {
     private var isPNGImage: Bool {
         iconString.contains(".png")
     }
+    
+    private var isSVGImage: Bool {
+        parsedModifiers["iconify"] != nil
+    }
 
     private var pngImageName: String {
         let components = iconString.components(separatedBy: " ")
         return components.first { $0.contains(".png") } ?? ""
+    }
+    
+    private var svgImageName: String {
+        parsedModifiers["iconify"] ?? ""
     }
 
     private var backgroundShape: some View {
@@ -95,9 +107,10 @@ struct CustomImage: View {
     }
 
     private var iconContent: some View {
-        if isPNGImage {
+        if isPNGImage || isSVGImage {
+            let imageName = isPNGImage ? pngImageName : svgImageName.replacingOccurrences(of: ":", with: "-")
             return AnyView(
-                Image(nsImage: loadImageFromFileSystem(imageName: pngImageName))
+                loadImage(imageName: imageName)
                     .renderingMode(.template) // 正确应用于 Image
                     .resizable()
                     .scaledToFit()
@@ -122,6 +135,11 @@ struct CustomImage: View {
                         .system(size: size * 0.5, weight: .bold, design: .default))
             )
         }
+    }
+    
+    private func loadImage(imageName: String) -> Image {
+        // 假设 loadImageFromFileSystem 函数可以处理 PNG 和 SVG 图像
+        return Image(nsImage: loadImageFromFileSystem(imageName: imageName))
     }
 
     private var strikeLine: some View {
@@ -202,10 +220,34 @@ struct CustomImage: View {
         }
 
         let pluginDir = extensionsDir.appendingPathComponent(pluginDirName)
-        let imageURL = pluginDir.appendingPathComponent(imageName)
+        var imageURL = pluginDir.appendingPathComponent(imageName)
 
         print("Loading image from path: \(imageURL.path)")
-        if let image = NSImage(contentsOf: imageURL) {
+        if isSVGImage {
+            if FileManager.default.fileExists(atPath: imageURL.path) {
+                // 如果本地存在图片，直接加载并返回
+                if let image = NSImage(contentsOf: imageURL) {
+                    image.isTemplate = true // 启用模板模式
+                    return image
+                } else {
+                    print("Failed to load image from path: \(imageURL.path)")
+                }
+            } else {
+                // 如果本地不存在图片，尝试下载
+                if let downloadedImageURL = downloadIconifyIcon(svgImageName) {
+                    // 下载成功后，加载图片并返回
+                    if let image = NSImage(contentsOf: downloadedImageURL) {
+                        image.isTemplate = true // 启用模板模式
+                        return image
+                    } else {
+                        print("Failed to load downloaded image")
+                    }
+                } else {
+                    print("Failed to download image")
+                }
+            }
+        } else if let image = NSImage(contentsOf: imageURL) {
+            image.isTemplate = true // 关键：启用模板模式
             return image
         } else {
             print("Failed to load image from path: \(imageURL.path)")
@@ -214,6 +256,93 @@ struct CustomImage: View {
         // 如果加载失败，返回一个默认图片
         return NSImage(named: "default_image") ?? NSImage()
     }
+
+    /// 下载 Iconify 图标到指定文件夹
+    /// - Parameter iconifyValue: 格式为 `<icon set prefix>:<icon name>`，例如 "mdi:home"
+    /// - Returns: 下载的图标文件路径，如果下载失败则返回 nil
+    private func downloadIconifyIcon(_ iconifyValue: String) -> URL? {
+        // 解析 iconifyValue
+        let components = iconifyValue.components(separatedBy: ":")
+        guard components.count == 2 else {
+            print("Invalid iconify value format: \(iconifyValue)")
+            return nil
+        }
+        
+        let iconSetPrefix = components[0]
+        let iconName = components[1]
+        
+        // Iconify CDN URL
+        let iconifyURLString = "https://api.iconify.design/\(iconSetPrefix)/\(iconName).svg"
+        guard let iconifyURL = URL(string: iconifyURLString) else {
+            print("Invalid URL: \(iconifyURLString)")
+            return nil
+        }
+        
+        // 获取 Application Support 目录
+        guard let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String,
+              let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            print("Failed to get Application Support directory.")
+            return nil
+        }
+        
+        // 构建完整的插件目录路径
+        let extensionsDir = appSupportURL.appendingPathComponent("\(appName)/Extensions")
+        
+        guard let pluginDirName = ExtensionManager.shared.getExtensionDir(name: extName) else {
+            print("Failed to get plugin directory name for: \(extName)")
+            return nil
+        }
+        
+        let pluginDir = extensionsDir.appendingPathComponent(pluginDirName)
+        
+        // 确保插件目录存在
+        do {
+            try FileManager.default.createDirectory(at: pluginDir, withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            print("Failed to create plugin directory: \(error)")
+            return nil
+        }
+        
+        // 图标文件路径
+        let iconFileName = "\(iconSetPrefix)-\(iconName).svg"
+        let iconFileURL = pluginDir.appendingPathComponent(iconFileName)
+        
+        // 使用信号量等待下载完成
+        let semaphore = DispatchSemaphore(value: 0)
+        var downloadedURL: URL? = nil
+        
+        let task = URLSession.shared.dataTask(with: iconifyURL) { data, response, error in
+            defer { semaphore.signal() }
+            
+            if let error = error {
+                print("Failed to download icon: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data returned.")
+                return
+            }
+            
+            // 将下载的数据保存到文件
+            do {
+                if FileManager.default.fileExists(atPath: iconFileURL.path) {
+                    try FileManager.default.removeItem(at: iconFileURL)
+                }
+                try data.write(to: iconFileURL)
+                print("Icon downloaded and saved to: \(iconFileURL.path)")
+                downloadedURL = iconFileURL
+            } catch {
+                print("Failed to save downloaded icon: \(error)")
+            }
+        }
+        
+        task.resume()
+        semaphore.wait()
+        
+        return downloadedURL
+    }
+    
 }
 
 extension String {
