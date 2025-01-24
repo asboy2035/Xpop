@@ -20,7 +20,26 @@
 > [!IMPORTANT]
 > This project is under active development and may have bugs. Inspired by PopClip, I’m building an open-source alternative with plans to fully support its plugin system (currently limited). As this is my first Swift project, the code will evolve as I learn and improve. Feedback is welcome!
 
+## Getting Started
 
+Download the latest version of Xpop from the [GitHub Releases page](https://github.com/DongqiShen/Xpop/releases).
+
+For more details, please visit the official [website](https://xpop.oneapis.uk).
+- [Installation](https://xpop.oneapis.uk/guide/installation)
+- [Extensions](https://xpop.oneapis.uk/guide/extensions)
+
+## Extensions
+
+### Package Extension
+1. Add the extension .xpopext to the folder.
+   ```
+   move YOUR_EXTENSION_NAME YOUR_EXTENSION_NAME.xpopext
+   ```
+2. Set it to Package
+   ```
+   SetFile -a B YOUR_EXTENSION_NAME.xpopext
+   ``` 
+3. Double click the extension to install it.
 
 ## Popclip Extensions Compatibility
 > [!IMPORTANT]
