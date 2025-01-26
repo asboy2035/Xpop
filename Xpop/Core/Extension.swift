@@ -209,7 +209,7 @@ class Extension: Identifiable, Codable {
         if let options = options {
             for option in options {
                 if let defaultValue = option.defaultValue {
-                    formattedURL = formattedURL.replacingOccurrences(of: "{popclip option \(option.label)}", with: defaultValue)
+                    formattedURL = formattedURL.replacingOccurrences(of: "{popclip option \(option.identifier)}", with: defaultValue)
                 }
             }
         }
@@ -315,6 +315,8 @@ struct ExtensionItem: Identifiable, Decodable, Encodable {
 }
 
 class Option: Codable {
+    /// Identifying string for this option.
+    let identifier: String
     /// The type of the option. See `OptionType` for possible values.
     let type: String
 
@@ -350,6 +352,7 @@ class Option: Codable {
     ///   - values: Array of strings representing the possible values for the multiple choice option.
     ///   - valueLabels: Array of "human friendly" strings corresponding to the multiple choice values.
     init(
+        identifier: String,
         type: String,
         label: String,
         description: String? = nil,
@@ -357,6 +360,7 @@ class Option: Codable {
         values: [String]? = nil,
         valueLabels: [String]? = nil
     ) {
+        self.identifier  = identifier
         self.type = type.lowercased()
         self.label = label
         self.description = description

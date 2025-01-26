@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FD0DC2512D2E1CC100B1676A /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = FD0DC2502D2E1CC100B1676A /* Yams */; };
 		FD8EDB902D37F77800BE2422 /* .swiftlint.yml in Resources */ = {isa = PBXBuildFile; fileRef = FD8EDB8F2D37F76500BE2422 /* .swiftlint.yml */; };
 		FD8EDB932D37FA3C00BE2422 /* .swiftformat in Resources */ = {isa = PBXBuildFile; fileRef = FD8EDB922D37FA3100BE2422 /* .swiftformat */; };
 		FD8F63162D2E693700C632D7 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = FD8F630D2D2E693700C632D7 /* .gitignore */; };
 		FD8F631A2D2E693700C632D7 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = FD8F63132D2E693700C632D7 /* README.md */; };
+		FDCB7C8D2D45D84C005CCEC5 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = FDCB7C8C2D45D84C005CCEC5 /* Yams */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,7 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FD0DC2512D2E1CC100B1676A /* Yams in Frameworks */,
+				FDCB7C8D2D45D84C005CCEC5 /* Yams in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -111,7 +111,7 @@
 			);
 			name = Xpop;
 			packageProductDependencies = (
-				FD0DC2502D2E1CC100B1676A /* Yams */,
+				FDCB7C8C2D45D84C005CCEC5 /* Yams */,
 			);
 			productName = Xpop;
 			productReference = FD0DC1F62D2E18F300B1676A /* Xpop.app */;
@@ -142,7 +142,7 @@
 			mainGroup = FD0DC1ED2D2E18F300B1676A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FD0DC24F2D2E1CC100B1676A /* XCRemoteSwiftPackageReference "Yams" */,
+				FDCB7C8B2D45D84C005CCEC5 /* XCRemoteSwiftPackageReference "Yams" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FD0DC1F72D2E18F300B1676A /* Products */;
@@ -418,7 +418,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		FD0DC24F2D2E1CC100B1676A /* XCRemoteSwiftPackageReference "Yams" */ = {
+		FDCB7C8B2D45D84C005CCEC5 /* XCRemoteSwiftPackageReference "Yams" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jpsim/Yams.git";
 			requirement = {
@@ -429,9 +429,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		FD0DC2502D2E1CC100B1676A /* Yams */ = {
+		FDCB7C8C2D45D84C005CCEC5 /* Yams */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FD0DC24F2D2E1CC100B1676A /* XCRemoteSwiftPackageReference "Yams" */;
+			package = FDCB7C8B2D45D84C005CCEC5 /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
 		};
 /* End XCSwiftPackageProductDependency section */

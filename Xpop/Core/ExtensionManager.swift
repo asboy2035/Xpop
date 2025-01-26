@@ -338,7 +338,7 @@ class ExtensionManager: ObservableObject {
                     throw Extension.ExtensionError.missingRequiredField("type or label in options")
                 }
                 return Option(
-                    type: type,
+                    identifier: optionDict["identifier"] as! String, type: type,
                     label: label,
                     description: optionDict["description"] as? String,
                     defaultValue: optionDict["defaultValue"] as? String,
