@@ -47,19 +47,20 @@ struct SettingView: View {
                 }
 
                 Section {
-                    let selections: [String: String] = Dictionary(uniqueKeysWithValues: manager.providers.map { (
+                    let providers: [String: String] = Dictionary(uniqueKeysWithValues: manager.providers.map { (
                         $0.id,
                         $0.name
                     ) })
                     SettingsModelProviderRow(
                         title: "Provider",
-                        selections: selections,
+                        selections: providers,
                         selectedId: $chosenProviderId,
                         selectedProvider: $chosenProviderName,
                         selectedModels: $chosenModels,
                         selectedModel: $chosenModel
                     )
-                    SettingsPickerRow(title: "Model Name", options: chosenModels, chosenOption: $chosenModel)
+                    let models = manager.getProvider(by: chosenProviderId)?.supportedModels
+                    SettingsPickerRow(title: "Model Name", options: models, chosenOption: $chosenModel)
 
                     NavigationLink(destination: ManageModelView().environment(
                         \.locale,
@@ -177,7 +178,7 @@ struct SettingsModelProviderRow: View {
             .onChange(of: selectedId) { newValue in
                 // 当 selectedId 改变时更新 selectedProvider
                 selectedProvider = selections[newValue] ?? ""
-                selectedModels = manager.getProvider(by: newValue)!.supportedModels
+                selectedModels = manager.getProvider(by: newValue)?.supportedModels ?? [""]
                 selectedModel = selectedModels[0]
             }
         }
@@ -186,7 +187,7 @@ struct SettingsModelProviderRow: View {
 
 struct SettingsPickerRow: View {
     let title: LocalizedStringKey
-    let options: [String]
+    let options: [String]?
     @Binding var chosenOption: String
 
     @Environment(\.locale) var locale
@@ -196,13 +197,20 @@ struct SettingsPickerRow: View {
             Text(title)
                 .font(.body)
             Spacer()
-            Picker("", selection: $chosenOption) {
-                ForEach(options, id: \.self) { option in
-                    Text(option).tag(option)
+
+            if let options = options, !options.isEmpty {
+                Picker("", selection: $chosenOption) {
+                    ForEach(options, id: \.self) { option in
+                        Text(option).tag(option)
+                    }
                 }
+                .pickerStyle(MenuPickerStyle())
+                .frame(width: 150)
+            } else {
+                Text("No options available")
+                    .foregroundColor(.gray)
+                    .frame(width: 150, alignment: .trailing)
             }
-            .pickerStyle(MenuPickerStyle())
-            .frame(width: 150)
         }
     }
 }

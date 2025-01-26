@@ -37,6 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         // 2. Set up the main window
         setupMainWindow()
+        setupMainMenu()
 
         // 3. Create the status bar item and menu
         setupStatusBar(eventMonitor: eventMonitor)
@@ -384,6 +385,71 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         ) { [weak self] _ in
             self?.settingsWindow = nil
         }
+    }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+        
+        // 添加应用菜单
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+        let appMenu = NSMenu()
+        appMenuItem.submenu = appMenu
+        appMenu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        
+        // 添加 Edit 菜单
+        let editMenuItem = NSMenuItem()
+        mainMenu.addItem(editMenuItem)
+        let editMenu = NSMenu(title: "Edit")
+        editMenuItem.submenu = editMenu
+        
+        // 添加 Undo 项
+        let undoItem = NSMenuItem(
+            title: "Undo",
+            action: #selector(UndoManager.undo),
+            keyEquivalent: "z"
+        )
+        undoItem.keyEquivalentModifierMask = .command
+        editMenu.addItem(undoItem)
+        
+        // 添加 Cut 项
+        let cutItem = NSMenuItem(
+            title: "Cut",
+            action: #selector(NSText.cut(_:)),
+            keyEquivalent: "x"
+        )
+        cutItem.keyEquivalentModifierMask = .command
+        editMenu.addItem(cutItem)
+        
+        // 添加 Copy 项
+        let copyItem = NSMenuItem(
+            title: "Copy",
+            action: #selector(NSText.copy(_:)),
+            keyEquivalent: "c"
+        )
+        copyItem.keyEquivalentModifierMask = .command
+        editMenu.addItem(copyItem)
+        
+        // 添加 Paste 项
+        let pasteItem = NSMenuItem(
+            title: "Paste",
+            action: #selector(NSText.paste(_:)),
+            keyEquivalent: "v"
+        )
+        pasteItem.keyEquivalentModifierMask = .command
+        editMenu.addItem(pasteItem)
+        
+        // 添加 Select All 项
+        let selectAllItem = NSMenuItem(
+            title: "Select All",
+            action: #selector(NSText.selectAll(_:)),
+            keyEquivalent: "a"
+        )
+        selectAllItem.keyEquivalentModifierMask = .command
+        editMenu.addItem(selectAllItem)
+        
+        // 设置应用主菜单
+        NSApplication.shared.mainMenu = mainMenu
     }
 
     @objc func quitApp() {
