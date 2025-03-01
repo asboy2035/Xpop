@@ -30,7 +30,10 @@ Xpop is a **free** and **open-source software**, and anyone can view and obtain 
 
 Xpop is exclusively designed for the **Mac platform** and is written in Swift. I hope that this native application will deliver an even better user experience.
 
-![xpop-translate](assets/xpop-translate.gif)
+<p align="center">
+  <img src="assets/xpop-translate.gif">
+</p>
+<!-- ![xpop-translate](assets/xpop-translate.gif) -->
 
 
 
