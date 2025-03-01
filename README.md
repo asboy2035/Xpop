@@ -20,6 +20,20 @@
 > [!IMPORTANT]
 > This project is under active development and may have bugs. Inspired by PopClip, I’m building an open-source alternative with plans to fully support its plugin system (currently limited). As this is my first Swift project, the code will evolve as I learn and improve. Feedback is welcome!
 
+## What is Xpop?
+
+Xpop is a utility tool for Mac that pops up a menu with multiple actions when text is selected in **any application**.
+
+The action features of Xpop are quite extensive, ranging from simple **copy-paste** and **web searches** to more complex operations. Xpop offers an easy-to-use **plugin system**, allowing developers to easily create and implement the functionalities they desire.
+
+Xpop is a **free** and **open-source software**, and anyone can view and obtain its source code on GitHub. You can consider it as an alternative to PopClip, with **partial compatibility with its plugin system**. PopClip is an excellent software that I highly admire.
+
+Xpop is exclusively designed for the **Mac platform** and is written in Swift. I hope that this native application will deliver an even better user experience.
+
+![xpop-translate](assets/xpop-translate.gif)
+
+
+
 ## Getting Started
 
 Download the latest version of Xpop from the [GitHub Releases page](https://github.com/DongqiShen/Xpop/releases).
@@ -28,7 +42,7 @@ For more details, please visit the official [website](https://xpop.oneapis.uk).
 - [Installation](https://xpop.oneapis.uk/guide/installation)
 - [Extensions](https://xpop.oneapis.uk/guide/extensions)
 
-## Extensions
+## Developer
 
 ### Package Extension
 1. Add the extension .xpopext to the folder.
