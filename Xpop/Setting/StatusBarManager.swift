@@ -174,11 +174,11 @@ class StatusBarManager: NSObject {
     }
 
     func showSuccessMessage() {
-        showMessage(imageName: "checkmark.circle.fill", color: .green, message: "插件安装成功")
+        showMessage(imageName: "checkmark.circle.fill", color: .green, message: "Successfully!")
     }
 
     func showFailureMessage() {
-        showMessage(imageName: "xmark.circle.fill", color: .red, message: "插件安装失败")
+        showMessage(imageName: "xmark.circle.fill", color: .red, message: "Failed!")
     }
 
     private func showMessage(imageName: String, color: Color, message: String) {

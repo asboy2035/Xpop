@@ -197,7 +197,7 @@ struct CustomImage: View {
     }
 
     private func loadImageFromFileSystem(imageName: String) -> NSImage {
-        // 获取应用程序名称 (假设为 "Xpop")
+        // 获取应用程序名称
         guard let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String else {
             print("Failed to get application name from Bundle.")
             return NSImage(named: "default_image") ?? NSImage()
