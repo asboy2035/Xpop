@@ -33,9 +33,6 @@ Xpop is exclusively designed for the **Mac platform** and is written in Swift. I
 <p align="center">
   <img src="assets/xpop-translate.gif">
 </p>
-<!-- ![xpop-translate](assets/xpop-translate.gif) -->
-
-
 
 ## Getting Started
 
