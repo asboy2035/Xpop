@@ -839,7 +839,7 @@ class ScrollableTextView: NSView {
     private var isTyping: Bool = false // 标记是否正在进行打字效果
     private let typingSpeedMin: TimeInterval = 0.01 // 最小速度
     private let typingSpeedMax: TimeInterval = 0.2 // 最大速度
-    private var currentTypingSpeed: TimeInterval = 0.05 // 当前打字速度
+    private var currentTypingSpeed: TimeInterval = 0.01 // 当前打字速度
     // 新增一个缓冲区属性
     private var internalStreamBuffer: [String] = []
 
@@ -977,7 +977,7 @@ class ScrollableTextView: NSView {
         typingTimer = nil
         currentIndex = 0
         currentText = ""
-        currentTypingSpeed = 0.05 // 当前打字速度
+        currentTypingSpeed = 0.01 // 当前打字速度
         internalStreamBuffer.removeAll()
     }
 
@@ -1026,11 +1026,11 @@ class ScrollableTextView: NSView {
 
             // 根据缓冲区大小动态调整速度
             let bufferLength = self.internalStreamBuffer.count
-            if bufferLength > 10 {
-                currentTypingSpeed = max(typingSpeedMin, currentTypingSpeed - 0.01)
-            } else if bufferLength < 3 {
-                currentTypingSpeed = min(typingSpeedMax, currentTypingSpeed + 0.01)
-            }
+//            if bufferLength > 10 {
+//                currentTypingSpeed = max(typingSpeedMin, currentTypingSpeed - 0.01)
+//            } else if bufferLength < 3 {
+//                currentTypingSpeed = min(typingSpeedMax, currentTypingSpeed + 0.01)
+//            }
             if self.internalStreamBuffer.isEmpty, self.currentText == self.textView.string {
                 // 停止计时器
                 self.isTyping = false
