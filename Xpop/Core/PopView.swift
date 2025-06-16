@@ -51,12 +51,12 @@ struct ExtensionButton: View {
             }
             appDelegate.hideWindow_new() // 点击按钮后隐藏窗口
         }) {
-            HStack(spacing: 4) {
+            HStack(spacing: 2) {
                 if let icon = ext.icon, !icon.isEmpty,
                    let name = ext.name, !name.isEmpty {
                     CustomImage(extName: "Unknown", iconString: icon, size: 28)
                     Text(name)
-                        .padding(.trailing, 4)
+                        .padding(.trailing, 6)
                 } else if let icon = ext.icon, !icon.isEmpty {
                     // Show icon only, fallback name as "Unknown" or similar if needed
                     CustomImage(extName: "Unknown", iconString: icon, size: 28)
@@ -75,13 +75,13 @@ struct ExtensionButton: View {
             .foregroundColor(isHovered ? Color.white : Color.primary)
         }
         .buttonStyle(PlainButtonStyle())
-        .frame(height: 28)
+        .frame(height: 30)
         .frame(minWidth: 60, maxWidth: 200, maxHeight: .infinity) // 设置灵活的宽度和高度
         .fixedSize()
         .layoutPriority(1) // 提高按钮的布局优先级
         .background(isHovered ? Color.accentColor.opacity(0.8) : Color.clear)
         .mask(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
         )
         .onHover { hovering in
             isHovered = hovering
@@ -167,7 +167,7 @@ struct PopView: View {
                 if extItem.isEnabled {
                     if extItem.name == "_XPOP_BUILDIN_COPY" {
                         Divider()
-                            .padding(2)
+                            .padding(4)
                     }
                     if extItem.name == "_XPOP_BUILDIN_CUT" {
                         if menuActionStateManager.canCut {
@@ -183,11 +183,10 @@ struct PopView: View {
                 }
             }
         }
-        .padding(4)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(6)
         .background(
             VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                .clipShape(RoundedRectangle(cornerRadius: 12)) // 添加圆角背景
+                .clipShape(RoundedRectangle(cornerRadius: 16)) // 添加圆角背景
         )
     }
 }
