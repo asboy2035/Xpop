@@ -125,7 +125,8 @@ struct CustomImage: View {
         } else if isSFSymbol {
             return AnyView(
                 Image(systemName: sfSymbolName)
-                    .font(.system(size: size * 0.5, weight: .bold))
+                    .font(.system(size: size * 0.5, weight: .regular))
+                    .symbolRenderingMode(.hierarchical)
             )
         } else {
             return AnyView(

@@ -37,7 +37,7 @@ class ExtensionManager: ObservableObject {
         // 搜索插件
         let searchExtension = Extension(
             name: "Search",
-            icon: "symbol:magnifyingglass",
+            icon: "symbol:rectangle.and.text.magnifyingglass",
             url: "https://www.google.com/search?q={xpop text}"
         )
 
@@ -60,7 +60,7 @@ class ExtensionManager: ObservableObject {
         // Copy
         let copyExtension = Extension(
             name: "Copy",
-//            icon: "symbol:document.on.document",
+            icon: "symbol:document.on.document",
             builtinType: "_buildin"
         )
         let copyExtensionItem = ExtensionItem(
@@ -71,7 +71,7 @@ class ExtensionManager: ObservableObject {
         // Cut
         let cutExtension = Extension(
             name: "Cut",
-//            icon: "symbol:scissors",
+            icon: "symbol:scissors",
             builtinType: "_buildin"
         )
         let cutExtensionItem = ExtensionItem(
@@ -82,7 +82,7 @@ class ExtensionManager: ObservableObject {
         // Paste
         let pasteExtension = Extension(
             name: "Paste",
-//            icon: "symbol:document.on.clipboard",
+            icon: "symbol:document.on.clipboard",
             builtinType: "_buildin"
         )
         let pasteExtensionItem = ExtensionItem(
@@ -539,7 +539,7 @@ enum BuiltInAction {
             Task {
                 let kbManager = KeyboardManager.shared
                 let winManager = AppDelegate.shared
-                winManager.hideWindow_new()
+                await winManager.hideWindow_new()
                 kbManager.simulateKeyPress(from: "command c")
             }
         },
@@ -547,7 +547,7 @@ enum BuiltInAction {
             Task {
                 let kbManager = KeyboardManager.shared
                 let winManager = AppDelegate.shared
-                winManager.hideWindow_new()
+                await winManager.hideWindow_new()
                 kbManager.simulateKeyPress(from: "command x")
             }
         },
@@ -555,7 +555,7 @@ enum BuiltInAction {
             Task {
                 let kbManager = KeyboardManager.shared
                 let winManager = AppDelegate.shared
-                winManager.hideWindow_new()
+                await winManager.hideWindow_new()
                 kbManager.simulateKeyPress(from: "command v")
             }
         },

@@ -24,7 +24,12 @@ struct InstallButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .frame(minWidth: 180, maxWidth: 240, maxHeight: .infinity) // 设置 frame，并允许垂直方向扩展
-        .background(isHovered ? Color.blue.opacity(0.8) : Color.clear)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .background(
+                    isHovered ? Color.accentColor.opacity(0.8) : Color.clear
+                )
+        )
         .contentShape(Rectangle())
         .onHover { hovering in
             isHovered = hovering
@@ -46,30 +51,38 @@ struct ExtensionButton: View {
             }
             appDelegate.hideWindow_new() // 点击按钮后隐藏窗口
         }) {
-            HStack {
-                // 如果有 icon，显示 CustomImage；否则显示 Text
-                if let icon = ext.icon, !icon.isEmpty {
-                    CustomImage(extName: ext.name!, iconString: icon, size: 28)
+            HStack(spacing: 4) {
+                if let icon = ext.icon, !icon.isEmpty,
+                   let name = ext.name, !name.isEmpty {
+                    CustomImage(extName: "Unknown", iconString: icon, size: 28)
+                    Text(name)
+                        .padding(.trailing, 4)
+                } else if let icon = ext.icon, !icon.isEmpty {
+                    // Show icon only, fallback name as "Unknown" or similar if needed
+                    CustomImage(extName: "Unknown", iconString: icon, size: 28)
                 } else if let name = ext.name, !name.isEmpty {
                     Text(name)
-                        .lineLimit(1) // 限制为单行
-                        .frame(maxHeight: .infinity, alignment: .leading) // 填充整个 HStack 的宽度
+                        .lineLimit(1)
+                        .frame(maxHeight: .infinity, alignment: .leading)
                         .padding(.horizontal, 4)
                 } else {
-                    // 如果 icon 和 name 都为空，显示一个占位符（可选）
-                    Image(systemName: "questionmark.circle") // 使用系统图标作为占位符
+                    Image(systemName: "questionmark.circle")
                 }
             }
+            .padding(.horizontal, 6)
             .frame(maxWidth: .infinity, maxHeight: .infinity) // 填充整个按钮区域
             .contentShape(Rectangle()) // 确保整个区域都可点击
             .foregroundColor(isHovered ? Color.white : Color.primary)
         }
         .buttonStyle(PlainButtonStyle())
         .frame(height: 28)
-        .frame(minWidth: 40, maxWidth: 200, maxHeight: .infinity) // 设置灵活的宽度和高度
+        .frame(minWidth: 60, maxWidth: 200, maxHeight: .infinity) // 设置灵活的宽度和高度
         .fixedSize()
         .layoutPriority(1) // 提高按钮的布局优先级
-        .background(isHovered ? Color.blue.opacity(0.8) : Color.clear)
+        .background(isHovered ? Color.accentColor.opacity(0.8) : Color.clear)
+        .mask(
+            RoundedRectangle(cornerRadius: 8)
+        )
         .onHover { hovering in
             isHovered = hovering
         }
@@ -77,15 +90,13 @@ struct ExtensionButton: View {
 }
 
 struct BlurEffectWithOpacityView: NSViewRepresentable {
-    var opacity: Double
-
     func makeNSView(context _: Context) -> NSView {
         let containerView = NSView()
         containerView.wantsLayer = true // 必须启用 layer
 
         let blurView = NSVisualEffectView()
         blurView.state = .active
-        blurView.material = .contentBackground // 默认材质，可根据需要更改
+        blurView.material = .hudWindow // 默认材质，可根据需要更改
         blurView.blendingMode = .behindWindow // 默认混合模式，可根据需要更改
         blurView.translatesAutoresizingMaskIntoConstraints = false // 启用自动布局
 
@@ -100,7 +111,6 @@ struct BlurEffectWithOpacityView: NSViewRepresentable {
         ])
 
         updateAppearance(for: blurView)
-        updateOpacity(for: containerView)
 
         return containerView
     }
@@ -108,7 +118,7 @@ struct BlurEffectWithOpacityView: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context _: Context) {
         guard let blurView = nsView.subviews.first as? NSVisualEffectView else { return }
         updateAppearance(for: blurView)
-        updateOpacity(for: nsView)
+
     }
 
     private func updateAppearance(for view: NSVisualEffectView) {
@@ -117,10 +127,6 @@ struct BlurEffectWithOpacityView: NSViewRepresentable {
         } else {
             view.material = .contentBackground // 浅色模式使用 contentBackground
         }
-    }
-
-    private func updateOpacity(for view: NSView) {
-        view.alphaValue = opacity
     }
 
     private func isDarkMode() -> Bool {
@@ -135,55 +141,57 @@ struct PopView: View {
     @ObservedObject var appDelegate = AppDelegate.shared
     @ObservedObject var extensionManager = ExtensionManager.shared
     @ObservedObject var menuActionStateManager = MenuActionStateManager.shared
-
+    
     var body: some View {
-        ZStack {
-            BlurEffectWithOpacityView(opacity: 0.7)
-                .edgesIgnoringSafeArea(.all)
-                .clipShape(RoundedRectangle(cornerRadius: 6)) // 添加圆角背景
-
-            HStack(spacing: 0) {
-                // 使用 InstallButton
-                // Use a Group and set an id based on appDelegate.isExtension
-                Group {
-                    if appDelegate.isExtension {
-                        let name = appDelegate.extensionObj!.name!
-                        InstallButton(action: {
-                            Task {
-                                do {
-                                    _ = try extensionManager.install(ext: appDelegate.extensionObj!)
-                                    appDelegate.statusBarManager.showSuccessMessage()
-                                } catch {
-                                    appDelegate.statusBarManager.showFailureMessage()
-                                }
-                                appDelegate.hideWindow_new()
+        HStack(spacing: 0) {
+            // 使用 InstallButton
+            // Use a Group and set an id based on appDelegate.isExtension
+            Group {
+                if appDelegate.isExtension {
+                    let name = appDelegate.extensionObj!.name!
+                    InstallButton(action: {
+                        Task {
+                            do {
+                                _ = try extensionManager.install(ext: appDelegate.extensionObj!)
+                                appDelegate.statusBarManager.showSuccessMessage()
+                            } catch {
+                                appDelegate.statusBarManager.showFailureMessage()
                             }
-                        }, extensionName: name)
-                    }
+                            appDelegate.hideWindow_new()
+                        }
+                    }, extensionName: name)
                 }
-                .id(appDelegate.isExtension) // Add an id here
-                ForEach(extensionManager.extensionList) { extItem in
-                    if extItem.isEnabled {
-                        if extItem.name == "_XPOP_BUILDIN_CUT" {
-                            if menuActionStateManager.canCut {
-                                ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
-                            }
-                        } else if extItem.name == "_XPOP_BUILDIN_PASTE" {
-                            if menuActionStateManager.canPaste {
-                                ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
-                            }
-                        } else {
+            }
+            .id(appDelegate.isExtension) // Add an id here
+            ForEach(extensionManager.extensionList) { extItem in
+                if extItem.isEnabled {
+                    if extItem.name == "_XPOP_BUILDIN_COPY" {
+                        Divider()
+                            .padding(2)
+                    }
+                    if extItem.name == "_XPOP_BUILDIN_CUT" {
+                        if menuActionStateManager.canCut {
                             ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
                         }
+                    } else if extItem.name == "_XPOP_BUILDIN_PASTE" {
+                        if menuActionStateManager.canPaste {
+                            ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
+                        }
+                    } else {
+                        ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
                     }
                 }
             }
         }
-        .frame(height: 28) // 确保整个 ToolbarView 的高度
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(4)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(
+            VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                .clipShape(RoundedRectangle(cornerRadius: 12)) // 添加圆角背景
+        )
     }
 }
 
-// #Preview {
-//    PopView()
-// }
+#Preview {
+    PopView()
+}
