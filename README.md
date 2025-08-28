@@ -1,12 +1,5 @@
 <p align="center">
-  <picture>
-    <!-- 深色模式图片 -->
-    <source srcset="Xpop/Assets.xcassets/AppIcon-White.appiconset/solar--cursor-square-linear-256x256.png" media="(prefers-color-scheme: dark)">
-    <!-- 浅色模式图片 -->
-    <source srcset="Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png" media="(prefers-color-scheme: light)">
-    <!-- 默认图片 -->
-    <img src="Xpop/Assets.xcassets/AppIcon.appiconset/solar--cursor-square-linear-256x256.png" alt="App Icon">
-  </picture>
+   <img width="480" src="/assets/Xpop-Icon.png" alt="Xpop Icon">
 </p>
 <h1 align="center">Xpop</h1>
 <h4 align="center">An open-source text selection tool for macOS, a PopClip alternative.</h4>
@@ -31,7 +24,7 @@ Xpop is a **free** and **open-source software**, and anyone can view and obtain 
 Xpop is exclusively designed for the **Mac platform** and is written in Swift. I hope that this native application will deliver an even better user experience.
 
 <p align="center">
-  <img src="assets/xpop-translate.gif">
+  <img src="assets/Xpop-Copy-Paste.gif">
 </p>
 
 ## Getting Started
