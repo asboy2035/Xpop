@@ -1,3 +1,5 @@
+# NOTE: This is a fork with a slightly different UI.
+
 <p align="center">
    <img width="480" src="/assets/Xpop-Icon.png" alt="Xpop Icon">
 </p>
