@@ -1,0 +1,115 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:1.00000,0.80000,0.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "extended-srgb:1.00000,0.80000,0.00000,1.00000"
+          },
+          "image-name" : "xmark 6.svg",
+          "name" : "xmark 6",
+          "position" : {
+            "scale" : 0.7,
+            "translation-in-points" : [
+              59.991475097340825,
+              -216.6519636456641
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "solid" : "extended-gray:0.75000,1.00000"
+          },
+          "glass" : false,
+          "image-name" : "MenuItem 3.svg",
+          "name" : "MenuItem 3",
+          "opacity" : 0.4,
+          "position" : {
+            "scale" : 0.8,
+            "translation-in-points" : [
+              -530.8234352591624,
+              -215.80168753273242
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "solid" : "extended-srgb:0.38039,0.33333,0.96078,1.00000"
+          },
+          "glass" : true,
+          "image-name" : "MenuItem 2.svg",
+          "name" : "MenuItem 2",
+          "position" : {
+            "scale" : 0.8,
+            "translation-in-points" : [
+              55.30496642749655,
+              -215.73789028377243
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "image-name" : "MenuBG 2.svg",
+          "name" : "MenuBG 2",
+          "position" : {
+            "scale" : 0.9,
+            "translation-in-points" : [
+              -705.3110455807641,
+              -214.37260333995766
+            ]
+          }
+        }
+      ],
+      "position" : {
+        "scale" : 1.2,
+        "translation-in-points" : [
+          -105.671447086314,
+          103.07229610507645
+        ]
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "pointer.arrow 2.svg",
+          "name" : "pointer.arrow 2",
+          "position" : {
+            "scale" : 2,
+            "translation-in-points" : [
+              188.13669466898355,
+              174.74501449814102
+            ]
+          }
+        }
+      ],
+      "opacity" : 0.6,
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

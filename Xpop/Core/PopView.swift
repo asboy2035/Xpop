@@ -27,7 +27,7 @@ struct InstallButton: View {
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .background(
-                    isHovered ? Color.accentColor.opacity(0.8) : Color.clear
+                    isHovered ? Color.accent.opacity(0.8) : Color.clear
                 )
         )
         .contentShape(Rectangle())
@@ -79,7 +79,7 @@ struct ExtensionButton: View {
         .frame(minWidth: 60, maxWidth: 200, maxHeight: .infinity) // 设置灵活的宽度和高度
         .fixedSize()
         .layoutPriority(1) // 提高按钮的布局优先级
-        .background(isHovered ? Color.accentColor.opacity(0.8) : Color.clear)
+        .background(isHovered ? Color.accent.opacity(0.8) : Color.clear)
         .mask(
             RoundedRectangle(cornerRadius: 10)
         )
@@ -165,10 +165,6 @@ struct PopView: View {
             .id(appDelegate.isExtension) // Add an id here
             ForEach(extensionManager.extensionList) { extItem in
                 if extItem.isEnabled {
-                    if extItem.name == "_XPOP_BUILDIN_COPY" {
-                        Divider()
-                            .padding(4)
-                    }
                     if extItem.name == "_XPOP_BUILDIN_CUT" {
                         if menuActionStateManager.canCut {
                             ExtensionButton(ext: extensionManager.extensions[extItem.name]!)
